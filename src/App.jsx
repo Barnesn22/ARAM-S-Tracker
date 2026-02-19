@@ -73,37 +73,37 @@ const champByKey = useMemo(() => {
 
   return (
     <Router>
-      <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <div className="header-bar" style={{ display: "flex", justifyContent: "flex-end", padding: "10px" }}>
-          <button onClick={() => window.electronAPI.minimize()}>_</button>
-          <button onClick={() => window.electronAPI.maximize()}>⬜</button>
-          <button onClick={() => window.electronAPI.close()}>X</button>
-        </div>
         <div style={{ height: "100vh", backgroundColor: "#1e1e2f", color: "#f0f0f0" }}>
+          <div className="header-bar" style={{ display: "flex", justifyContent: "flex-end", padding: "10px" }}>
+            <button onClick={() => window.electronAPI.minimize()}>_</button>
+            <button onClick={() => window.electronAPI.maximize()}>⬜</button>
+            <button onClick={() => window.electronAPI.close()}>X</button>
+          </div>
           <nav style={{ display: "flex", justifyContent: "center", gap: "30px", padding: "20px" }}>
             <Link to="/">Tracker</Link>
             <Link to="/champ-select">Champ Select</Link>
           </nav>
 
-          <Routes>
-            <Route path="/" element={
-              <ChampionTracker 
-                completedChamps={completedChamps}
-                setCompleted={setCompleted}
-                champions={champions}
-                idToNameMap={idToNameMap}
-                version={version}
-                champByKey={champByKey} />} />
-            <Route path="/champ-select" element={
-              <ChampionSelect
-                completedChamps={completedChamps}
-                champions={champions}
-                idToNameMap={idToNameMap}
-                version={version}
-                champByKey={champByKey} />} />
-          </Routes>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            <Routes>
+              <Route path="/" element={
+                <ChampionTracker 
+                  completedChamps={completedChamps}
+                  setCompleted={setCompleted}
+                  champions={champions}
+                  idToNameMap={idToNameMap}
+                  version={version}
+                  champByKey={champByKey} />} />
+              <Route path="/champ-select" element={
+                <ChampionSelect
+                  completedChamps={completedChamps}
+                  champions={champions}
+                  idToNameMap={idToNameMap}
+                  version={version}
+                  champByKey={champByKey} />} />
+            </Routes>
+          </div>
         </div>
-      </div>
     </Router>
   );
 }

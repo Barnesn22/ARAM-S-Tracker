@@ -29,7 +29,6 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
         padding: "20px",
         color: "#f0f0f0",
         backgroundColor: "#1e1e2f",
-        minHeight: "100vh",
       }}
     >
       {/* Centered button */}
