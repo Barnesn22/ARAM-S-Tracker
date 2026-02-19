@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, version } from "react";
 
-const DD_IMG_URL = "http://ddragon.leagueoflegends.com/cdn/13.23.1/img/champion/";
-
-export default function ChampionSelect({ completedChamps }) {
+export default function ChampionSelect({ completedChamps, champions, idToNameMap, version, champByKey }) {
   const [picks, setPicks] = useState([]);
   const [bench, setBench] = useState([]);
   const [loading, setLoading] = useState(false);
+  const DD_IMG_URL = `http://ddragon.leagueoflegends.com/cdn/${version}/img/champion/`;
+  
 
   const getChampSelect = async () => {
     setLoading(true);
@@ -52,12 +52,14 @@ export default function ChampionSelect({ completedChamps }) {
             paddingBottom: "10px",
           }}
         >
-          {bench.map((champ) => {
+          {bench.map((champ_key) => {
+            const champ = champByKey[champ_key]
+            console.log(champ)
             if (!champ) return null; // skip undefined
-            const completed = completedChamps[champ] === true;
+            const completed = completedChamps[champ.id] === true;
             return (
               <div
-                key={champ}
+                key={idToNameMap[champ.id]}
                 style={{
                   width: "100px",
                   height: "100px",
@@ -66,11 +68,11 @@ export default function ChampionSelect({ completedChamps }) {
                   border: completed ? "3px solid #4caf50" : "3px solid #555",
                   flexShrink: 0,
                 }}
-                title={champ}
+                title={champ.name}
               >
                 <img
-                  src={`${DD_IMG_URL}${champ}.png`}
-                  alt={champ}
+                  src={champ.image}
+                  alt={champ.name}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
@@ -89,7 +91,8 @@ export default function ChampionSelect({ completedChamps }) {
           }}
         >
           {picks.map((p) => {
-            const completed = completedChamps[p.Champion] === true;
+            const champ = champByKey[p.Champion]
+            const completed = completedChamps[champ.id] === true;
             return (
             <div
               key={p.Summoner}
@@ -105,8 +108,8 @@ export default function ChampionSelect({ completedChamps }) {
               }}
             >
               <img
-                src={`${DD_IMG_URL}${p.Champion}.png`}
-                alt={p.Champion}
+                src={champ.image}
+                alt={champ.name}
                 style={{
                   width: "60px",
                   height: "60px",

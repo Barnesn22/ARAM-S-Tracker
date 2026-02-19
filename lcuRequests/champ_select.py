@@ -73,13 +73,12 @@ def build_snapshot():
         champ_name = champ_map.get(champ_id, "None") if champ_id != 0 else "None"
         picks.append({
             "Summoner": player.get("gameName", "Unknown"),
-            "Champion": champ_name
+            "Champion": champ_id
         })
 
     bench_ids = get_bench(session)
-    bench_names = [champ_map.get(c, f"Unknown({c})") for c in bench_ids]
 
-    return picks, bench_names
+    return picks, bench_ids
 
 if __name__ == "__main__":
     print(build_snapshot())
