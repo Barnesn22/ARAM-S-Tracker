@@ -96,6 +96,7 @@ body {
   background-color: #2c2c3f;
   color: #f0f0f0;
   font-size: 14px;
+  box-sizing: border-box;
 }
 
 .header-bar {
@@ -108,12 +109,13 @@ body {
 }
 
 .scroll-container {
-  max-height: 600px;
+  height: 60vh;
   overflow-y: auto;
   border: 1px solid #444;
   padding: 15px;
   border-radius: 10px;
   background-color: #2c2c3f;
+  box-sizing: border-box;
 }
 
 .scroll-container::-webkit-scrollbar {
