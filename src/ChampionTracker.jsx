@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-
-function ChampionTracker({completedChamps, setCompleted, champions, idToNameMap, version}) {
+function ChampionTracker({completedChamps, setCompleted, champions, version, champByKey}) {
   const [search, setSearch] = useState("");
+  const [syncing, setSyncing] = useState(false)
 
   const toggleChampion = (champ) => {
     const updated = { ...completedChamps };
@@ -17,12 +17,45 @@ function ChampionTracker({completedChamps, setCompleted, champions, idToNameMap,
     champ.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const syncFromLeague = async () => {
+    try {
+      setSyncing(true);
+
+      const challengeData = await window.electronAPI.getPlayerChallenges();
+      const completedKeys = challengeData[101301]["completedIds"];
+      const newCompleted = {};
+      Object.keys(completedChamps).forEach((id) => {
+        newCompleted[id] = false;
+      });
+
+      completedKeys.forEach((key) => {
+        const champ = champByKey[key];
+        if (champ) {
+          newCompleted[champ.id] = true;
+        }
+      });
+
+      setCompleted(newCompleted)
+
+    } catch (err) {
+      console.error("Sync failed:", err);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   //if (loading) return <h2 style={{ padding: "40px" }}>Loading Champions...</h2>;
 
   return (
     <div className="page">
       <div className="container">
         <h1 style={{textAlign: "center"}}>ARAM S Tracker</h1>
+
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
+          <button onClick={syncFromLeague} disabled={syncing}>
+            {syncing ? "Syncing..." : "Sync From League"}
+          </button>
+        </div>
 
         {/* Search bar */}
         <input

@@ -23,7 +23,6 @@ function App() {
           `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/data/en_US/champion.json`
         );
         const champData = await champRes.json();
-        console.log(champData)
 
         const champArray = Object.values(champData.data).map((champ) => ({
           name: champ.name,
@@ -93,7 +92,6 @@ const champByKey = useMemo(() => {
                   completedChamps={completedChamps}
                   setCompleted={setCompleted}
                   champions={champions}
-                  idToNameMap={idToNameMap}
                   version={version}
                   champByKey={champByKey} />} />
               <Route path="/champ-select" element={

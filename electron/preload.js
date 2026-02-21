@@ -8,5 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),
   close: () => ipcRenderer.send("window-close"),
+  getChampSelect: () => ipcRenderer.invoke("get-champ-select"),
+  getPlayerChallenges: () => ipcRenderer.invoke("get-player-challenges"),
+  getGamePhase: () => ipcRenderer.invoke("get-game-phase"),
 });
 

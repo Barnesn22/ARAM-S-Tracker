@@ -3,6 +3,7 @@ import { ipcMain } from "electron";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import * as lcuService from "./lcuService.js";
 
 let win;
 
@@ -76,5 +77,17 @@ ipcMain.on("window-maximize", () => {
 
 ipcMain.on("window-close", () => {
   if (win) win.close();
+});
+
+ipcMain.handle("get-champ-select", async () => {
+  return await lcuService.getChampSelect();
+});
+
+ipcMain.handle("get-game-phase", async () => {
+  return await lcuService.getGamePhase();
+});
+
+ipcMain.handle("get-player-challenges", async () => {
+  return await lcuService.getPlayerChallenges();
 });
 

@@ -1,27 +1,54 @@
-import { useState, version } from "react";
+import { useState, version, useEffect } from "react";
 
 export default function ChampionSelect({ completedChamps, champions, idToNameMap, version, champByKey }) {
   const [picks, setPicks] = useState([]);
   const [bench, setBench] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const DD_IMG_URL = `http://ddragon.leagueoflegends.com/cdn/${version}/img/champion/`;
-  
+  const [inChampSelect, setInChampSelect] = useState(false);
 
+  
   const getChampSelect = async () => {
-    setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/champ-select");
-      if (!res.ok) throw new Error("No session found");
-      const data = await res.json();
-      setPicks(data.picks);
-      setBench(data.bench);
+      const phase = await window.electronAPI.getGamePhase();
+      console.log("Current phase:", phase);
+
+      if (phase !== "ChampSelect") {
+        setPicks([]);
+        setBench([]);
+        setInChampSelect(false);
+        return;
+      }
+
+      setInChampSelect(true);
+
+      const data = await window.electronAPI.getChampSelect();
+      console.log("Champ select data:", data);
+      const bench = data["benchChampions"];
+      const picks = data["myTeam"];
+
+      const benchChamps = bench.map((b) => champByKey[b["championId"]] || null);
+      console.log(benchChamps)
+      setBench(benchChamps);
+
+      // Map picks: convert championId → champ object + keep Summoner name
+      const teamPicks = picks.map((p) => ({
+        Summoner: p["gameName"],
+        champ: champByKey[p["championId"]] || null,
+      }));
+      console.log(teamPicks)
+      setPicks(teamPicks);
+
     } catch (err) {
       console.error(err);
       alert("Could not fetch champ select session");
     } finally {
-      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    getChampSelect();
+    const interval = setInterval(getChampSelect, 2000); // then every 2 seconds
+    return () => clearInterval(interval); // cleanup on unmount
+  }, []);
 
   return (
     <div
@@ -33,12 +60,12 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
     >
       {/* Centered button */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-        <button onClick={getChampSelect} style={{ padding: "10px 20px" }}>
-          Get Current Champ Select
-        </button>
+        {!inChampSelect && (
+          <p style={{ textAlign: "center", color: "#f44336", fontWeight: "bold", margin: "20px 0" }}>
+            Not in Champ Select
+          </p>
+        )}
       </div>
-
-      {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
       {/* Bench champions across the top */}
       {bench.length > 0 && (
@@ -51,8 +78,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
             paddingBottom: "10px",
           }}
         >
-          {bench.map((champ_key) => {
-            const champ = champByKey[champ_key]
+          {bench.map((champ) => {
             console.log(champ)
             if (!champ) return null; // skip undefined
             const completed = completedChamps[champ.id] === true;
@@ -90,36 +116,42 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
           }}
         >
           {picks.map((p) => {
-            const champ = champByKey[p.Champion]
+            // Use default champ object if p.champ is null
+            const champ = p.champ || {
+              id: -1,
+              name: "Unknown",
+              image: "/default-champ.png", // <-- put your default image path here
+            };
+
             const completed = completedChamps[champ.id] === true;
+
             return (
-            <div
-              key={p.Summoner}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                backgroundColor: "#333",
-                padding: "5px 10px",
-                borderRadius: "8px",
-                width: "220px",
-                
-              }}
-            >
-              <img
-                src={champ.image}
-                alt={champ.name}
+              <div
+                key={p.Summoner}
                 style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "4px",
-                  border: completed ? "3px solid #4caf50" : "3px solid #555",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  backgroundColor: "#333",
+                  padding: "5px 10px",
+                  borderRadius: "8px",
+                  width: "220px",
                 }}
-              />
-              <span>{p.Summoner}</span>
-            </div>
-          );
-        })}
+              >
+                <img
+                  src={champ.image}
+                  alt={champ.name}
+                  style={{
+                    width: "60px",
+                    height: "60px",
+                    borderRadius: "4px",
+                    border: completed ? "3px solid #4caf50" : "3px solid #555",
+                  }}
+                />
+                <span>{p.Summoner}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
