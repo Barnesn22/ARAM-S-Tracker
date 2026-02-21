@@ -36,6 +36,7 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
       });
 
       setCompleted(newCompleted)
+      window.electronAPI.saveMissions(newCompleted)
 
     } catch (err) {
       console.error("Sync failed:", err);
