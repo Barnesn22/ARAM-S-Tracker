@@ -18,7 +18,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # ---------------------------
 
 SUPABASE_URL = "https://swffwjjveghovalezabk.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3ZmZ3amp2ZWdob3ZhbGV6YWJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTczODM1MCwiZXhwIjoyMDg3MzE0MzUwfQ.S9DvKqQx7z5TKyZj1CwHFgZt5rvI1rn-kfTdrcaHlmA"
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 RAW_FOLDER = "raw_matches"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
