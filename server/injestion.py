@@ -93,19 +93,13 @@ def get_next_match_id():
 
     match_id = result.data[0]["match_id"]
 
-    # delete it from queue (or mark processed)
+    # delete it from queue
     supabase.table("match_queue") \
         .delete() \
         .eq("match_id", match_id) \
         .execute()
 
     return match_id
-
-def delete_match_id(match_id):
-    supabase.table("match_queue") \
-        .delete() \
-        .eq("match_id", match_id) \
-        .execute()
 
 def insert_new_match_ids(match_ids):
     rows = [{"match_id": m, "region": "AMERICAS"} for m in match_ids]
@@ -114,6 +108,8 @@ def insert_new_match_ids(match_ids):
     supabase.table("match_queue") \
         .upsert(rows) \
         .execute()
+
+    supabase.rpc("delete_processed_matches", {}).execute()
 
 
 # ---------------------------
@@ -265,18 +261,15 @@ def main():
             with open(filepath, "w") as f:
                 json.dump(match_json, f)
 
-            # Delete from Queue
-            delete_match_id(match_id)
-
             # Transform + load
             transform_and_load(match_json)
 
             if not get_histories:
-                time.sleep(1)
+                time.sleep(.2)
                 continue
             
             response = supabase.table("games").select("match_id").execute()
-            match_ids = {row["match_id"] for row in response.data}
+            match_ids = {str(row["match_id"]) for row in response.data}
 
             # Get player match histories
             new_match_ids = set()
@@ -293,11 +286,14 @@ def main():
                     f"/lol-match-history/v1/products/lol/{puuid}/matches"
                 )
                 for m in history['games']['games']:
-                    if m['gameId'] not in match_ids:
-                        new_match_ids.add(m['gameId'])
+                    if str(m['gameId']) not in match_ids:
+                        new_match_ids.add(str(m['gameId']))
                         print("found new game")
+                    else:
+                        print("seen game before")
 
             insert_new_match_ids(new_match_ids)
+
         
 
         except Exception as e:
@@ -305,7 +301,7 @@ def main():
             traceback.print_exc()
             time.sleep(2)
 
-        time.sleep(1)
+        time.sleep(.2)
 
 
 if __name__ == "__main__":

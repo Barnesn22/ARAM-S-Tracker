@@ -1,14 +1,33 @@
 import { useState, version, useEffect } from "react";
+import { supabase } from './supabaseClient'
 
 export default function ChampionSelect({ completedChamps, champions, idToNameMap, version, champByKey }) {
   const [picks, setPicks] = useState([]);
   const [bench, setBench] = useState([]);
   const [inChampSelect, setInChampSelect] = useState(false);
+  const [winrates, setWinrates] = useState([])
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('champion_stats')  // your materialized view
+        .select('*')
+        .order('winrate', { ascending: false }) // optional sort
+
+      if (error) {
+        console.error('Error fetching champion stats:', error)
+      } else {
+        setWinrates(data)
+      }
+    }
+
+    fetchStats()
+  }, [])
   
   const getChampSelect = async () => {
     try {
       const phase = await window.electronAPI.getGamePhase();
+       
 
       if (phase !== "ChampSelect") {
         setPicks([]);
@@ -38,6 +57,14 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
     } finally {
     }
   };
+
+  const getWinrate = (champId) => {
+    console.log(champId)
+    console.log(winrates)
+    const champ = winrates.find(c => {return c.champ_id === Number(champId)});
+    console.log(champ)
+    return champ ? champ.winrate : 0; // default 0 if not found
+  }
 
   useEffect(() => {
     getChampSelect();
@@ -74,27 +101,42 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
           }}
         >
           {bench.map((champ) => {
-            console.log(champ)
-            if (!champ) return null; // skip undefined
+            if (!champ) return null;
+
             const completed = completedChamps[champ.id] === true;
+            const winrate = getWinrate(champ.key);
+
             return (
               <div
                 key={idToNameMap[champ.id]}
                 style={{
                   width: "100px",
-                  height: "100px",
+                  height: "120px", // extra space for winrate text
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: completed ? "3px solid #4caf50" : "3px solid #555",
                   flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                 }}
-                title={champ.name}
+                title={`${champ.name} - Winrate: ${(winrate * 100).toFixed(2)}%`}
               >
                 <img
                   src={champ.image}
                   alt={champ.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  style={{ width: "100%", height: "100px", objectFit: "cover" }}
                 />
+                <span
+                  style={{
+                    marginTop: "4px",
+                    fontSize: "14px",
+                    color: "#f0f0f0",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {(winrate * 100).toFixed(2)}%
+                </span>
               </div>
             );
           })}
