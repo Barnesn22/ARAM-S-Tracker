@@ -68,7 +68,7 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
         />
 
         {/* Scrollable grid */}
-        <div className="scroll-container">
+        <div className="scroll-container custom-scrollbar">
           <div className="grid">
             {filteredChamps.map((champ) => {
               const isCompleted = completedChamps[champ.id] === true;

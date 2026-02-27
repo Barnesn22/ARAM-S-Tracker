@@ -1,5 +1,5 @@
 import { useState, version, useEffect } from "react";
-import { supabase } from './supabaseClient'
+import { supabase } from '../supabaseClient'
 
 export default function ChampionSelect({ completedChamps, champions, idToNameMap, version, champByKey }) {
   const [picks, setPicks] = useState([]);

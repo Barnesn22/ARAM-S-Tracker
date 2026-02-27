@@ -9,12 +9,13 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 VIEWS_TO_REFRESH = [
     "champion_stats",
+    "team_matches"
 ]
 
 def refresh_views():
     for view in VIEWS_TO_REFRESH:
         try:
-            supabase.rpc("refresh_all_views").execute()
+            supabase.rpc("refresh_all_views", {view}).execute()
             print(f"Refreshed {view} successfully")
         except Exception as e:
             print(f"Error refreshing {view}: {e}")

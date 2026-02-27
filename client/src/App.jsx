@@ -1,13 +1,15 @@
 import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
-import ChampionTracker from "./ChampionTracker.jsx";
-import ChampionSelect from "./ChampionSelect.jsx";
+import ChampionTracker from "./pages/ChampionTracker.jsx";
+import ChampionSelect from "./pages/ChampionSelect.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 function App() {
   const [completedChamps, setCompleted] = useState({});
   const [champions, setChampions] = useState([]);
   const [idToNameMap, setIdToNameMap] = useState({});
   const [version, setVersion] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchChampions = async () => {
@@ -74,18 +76,34 @@ const champByKey = useMemo(() => {
     <Router>
       <div style={{ height: "100vh", backgroundColor: "#1e1e2f", color: "#f0f0f0" }}>
         <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <div className="header-bar" style={{ display: "flex", justifyContent: "flex-end", padding: "10px" }}>
-            <button onClick={() => window.electronAPI.minimize()}>_</button>
-            <button onClick={() => window.electronAPI.maximize()}>⬜</button>
-            <button onClick={() => window.electronAPI.close()}>X</button>
-          </div>
-        
-          <nav style={{ display: "flex", justifyContent: "center", gap: "30px", padding: "20px" }}>
-            <Link to="/">Tracker</Link>
-            <Link to="/champ-select">Champ Select</Link>
-          </nav>
+          <div className="header-bar">
+            <button
+              className="menu-button"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              ☰
+            </button>
 
-          <div style={{ flex: 1, overflowY: "auto" }}>
+            <div className="window-controls">
+              <button onClick={() => window.electronAPI.minimize()}>_</button>
+              <button onClick={() => window.electronAPI.maximize()}>⬜</button>
+              <button onClick={() => window.electronAPI.close()}>X</button>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          {/* Sidebar Overlay */}
+          {menuOpen && (
+            <div className="side-menu-overlay" onClick={() => setMenuOpen(false)}>
+              <div className="side-menu" onClick={(e) => e.stopPropagation()}>
+                <Link to="/" onClick={() => setMenuOpen(false)}>Tracker</Link>
+                <Link to="/champ-select" onClick={() => setMenuOpen(false)}>Champ Select</Link>
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile View</Link>
+              </div>
+            </div>
+          )}
+
+          <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar">
             <Routes>
               <Route path="/" element={
                 <ChampionTracker 
@@ -101,6 +119,7 @@ const champByKey = useMemo(() => {
                   idToNameMap={idToNameMap}
                   version={version}
                   champByKey={champByKey} />} />
+              <Route path="/profile" element={<ProfilePage champByKey={champByKey}/>} />
             </Routes>
           </div>
         </div>
