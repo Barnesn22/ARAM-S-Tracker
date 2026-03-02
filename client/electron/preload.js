@@ -11,5 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getChampSelect: () => ipcRenderer.invoke("get-champ-select"),
   getPlayerChallenges: () => ipcRenderer.invoke("get-player-challenges"),
   getGamePhase: () => ipcRenderer.invoke("get-game-phase"),
+  getInitialChamps: () => ipcRenderer.invoke("get-initial-champs"),
+  getMySelection: () => ipcRenderer.invoke("get-my-selection"),
 });
 

@@ -82,8 +82,19 @@ async function getPlayerChallenges() {
   return await lcuRequest("/lol-challenges/v1/challenges/local-player");
 }
 
+async function getInitialChamps() {
+  return await lcuRequest("/lol-lobby-team-builder/champ-select/v1/subset-champion-list")
+}
+
+async function getMySelection() {
+  return await lcuRequest("/lol-lobby-team-builder/champ-select/v1/session/my-selection")
+}
+
 export  {
   getChampSelect,
   getGamePhase,
   getPlayerChallenges,
+  getInitialChamps,
+  getMySelection,
 };
+

@@ -5,7 +5,9 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
   const [picks, setPicks] = useState([]);
   const [bench, setBench] = useState([]);
   const [inChampSelect, setInChampSelect] = useState(false);
-  const [winrates, setWinrates] = useState([])
+  const [winrates, setWinrates] = useState([]);
+  const [initialSelection, setInitialSelection] = useState(false);
+  const [options, setOptions] = useState([]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -13,7 +15,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
         .from('champion_stats')  // your materialized view
         .select('*')
         .order('winrate', { ascending: false }) // optional sort
-
+  
       if (error) {
         console.error('Error fetching champion stats:', error)
       } else {
@@ -29,14 +31,27 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
       const phase = await window.electronAPI.getGamePhase();
        
 
-      if (phase !== "ChampSelect") {
+      if (phase !== "ChampSelect") {5
         setPicks([]);
         setBench([]);
         setInChampSelect(false);
+        setInitialSelection(false);
         return;
       }
 
       setInChampSelect(true);
+
+      const mySelection = await window.electronAPI.getMySelection();
+      console.log("Selection: ", mySelection["championId"])
+      if (mySelection["championId"] == 0) {
+        setInitialSelection(true);
+        const response = await window.electronAPI.getInitialChamps();
+        setOptions(response)
+      }
+      else {
+        setInitialSelection(false)
+      }
+      console.log(options)
 
       const data = await window.electronAPI.getChampSelect();
       const bench = data["benchChampions"];
@@ -59,10 +74,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
   };
 
   const getWinrate = (champId) => {
-    console.log(champId)
-    console.log(winrates)
     const champ = winrates.find(c => {return c.champ_id === Number(champId)});
-    console.log(champ)
     return champ ? champ.winrate : 0; // default 0 if not found
   }
 
@@ -90,7 +102,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
       </div>
 
       {/* Bench champions across the top */}
-      {bench.length > 0 && (
+      {inChampSelect && (
         <div
           style={{
             display: "flex",
@@ -98,20 +110,28 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
             marginBottom: "20px",
             overflowX: "auto",
             paddingBottom: "10px",
+            justifyContent: "center"
           }}
         >
-          {bench.map((champ) => {
-            if (!champ) return null;
+          {Array.from({ length: 10 }).map((_, index) => {
+            const champ = bench[index]; // may be undefined
 
-            const completed = completedChamps[champ.id] === true;
-            const winrate = getWinrate(champ.key);
+            const isEmpty = !champ;
+
+            const completed = champ
+              ? completedChamps[champ.id] === true
+              : false;
+
+            const winrate = champ
+              ? getWinrate(champ.key) || 0
+              : 0;
 
             return (
               <div
-                key={idToNameMap[champ.id]}
+                key={index}
                 style={{
                   width: "100px",
-                  height: "120px", // extra space for winrate text
+                  height: "120px",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border: completed ? "3px solid #4caf50" : "3px solid #555",
@@ -119,14 +139,29 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
+                  backgroundColor: "#2a2a3a",
                 }}
-                title={`${champ.name} - Winrate: ${(winrate * 100).toFixed(2)}%`}
+                title={
+                  champ
+                    ? `${champ.name} - Winrate: ${(winrate * 100).toFixed(2)}%`
+                    : "Empty slot"
+                }
               >
                 <img
-                  src={champ.image}
-                  alt={champ.name}
-                  style={{ width: "100%", height: "100px", objectFit: "cover" }}
+                  src={
+                    champ
+                      ? champ.image
+                      : "../assets/ChampionSquare.webp" // your default image
+                  }
+                  alt={champ ? champ.name : "Empty"}
+                  style={{
+                    width: "100%",
+                    height: "100px",
+                    objectFit: "cover",
+                    opacity: isEmpty ? 0.4 : 1, // slightly faded empty slots
+                  }}
                 />
+
                 <span
                   style={{
                     marginTop: "4px",
@@ -135,7 +170,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
                     fontWeight: "bold",
                   }}
                 >
-                  {(winrate * 100).toFixed(2)}%
+                  {champ ? `${(winrate * 100).toFixed(2)}%` : "--"}
                 </span>
               </div>
             );
@@ -143,54 +178,124 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
         </div>
       )}
 
-      {/* Picks along the left side */}
-      {picks.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
-          }}
-        >
-          {picks.map((p) => {
-            // Use default champ object if p.champ is null
-            const champ = p.champ || {
-              id: -1,
-              name: "Unknown",
-              image: "/default-champ.png", // <-- put your default image path here
-            };
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start", // ensures same top alignment
+          gap: "40px",
+          marginTop: "20px",
+          width: "90%",
+          height: "100%",
+        }}
+      >
+        {/* Picks along the left side */}
+        {inChampSelect && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px",
+            }}
+          >
+            {picks.map((p) => {
+              // Use default champ object if p.champ is null
+              const champ = p.champ || {
+                id: -1,
+                name: "Unknown",
+                image: "../assets/ChampionSquare.webp", 
+              };
 
-            const completed = completedChamps[champ.id] === true;
+              const completed = completedChamps[champ.id] === true;
 
-            return (
-              <div
-                key={p.Summoner}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  backgroundColor: "#333",
-                  padding: "5px 10px",
-                  borderRadius: "8px",
-                  width: "220px",
-                }}
-              >
-                <img
-                  src={champ.image}
-                  alt={champ.name}
+              return (
+                <div
+                  key={p.Summoner}
                   style={{
-                    width: "60px",
-                    height: "60px",
-                    borderRadius: "4px",
-                    border: completed ? "3px solid #4caf50" : "3px solid #555",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    backgroundColor: "#333",
+                    padding: "5px 10px",
+                    borderRadius: "8px",
+                    width: "220px",
                   }}
-                />
-                <span>{p.Summoner}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                >
+                  <img
+                    src={champ.image}
+                    alt={champ.name}
+                    style={{
+                      width: "60px",
+                      height: "60px",
+                      borderRadius: "4px",
+                      border: completed ? "3px solid #4caf50" : "3px solid #555",
+                    }}
+                  />
+                  <span>{p.Summoner}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* MIDDLE – Champion Options */}
+        {initialSelection && (
+          <div
+            style={{
+              display: "flex",
+              flex: 1,
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: "15px",
+              }}
+            >
+              {options.map((c) => {
+                const champ = champByKey[c];
+                const winrate = getWinrate(champ.key) || 0;
+                const completed = completedChamps[champ.id] === true;
+
+                return (
+                  <div
+                    key={champ.id}
+                    style={{
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      border: completed ? "3px solid #4caf50" : "3px solid #555",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <img
+                      src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champ.id}_0.jpg`}
+                      alt={champ.name}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        flexGrow: 1,
+                        objectFit: "contain",
+                      }}
+                    />
+                    <span
+                      style={{
+                        marginTop: "4px",
+                        fontSize: "14px",
+                        color: "#f0f0f0",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {(winrate * 100).toFixed(2)}%
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

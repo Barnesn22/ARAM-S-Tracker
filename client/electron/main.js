@@ -95,3 +95,11 @@ ipcMain.handle("get-player-challenges", async () => {
   return await lcuService.getPlayerChallenges();
 });
 
+ipcMain.handle("get-initial-champs", async () => {
+  return await lcuService.getInitialChamps();
+});
+
+ipcMain.handle("get-my-selection", async () => {
+  return await lcuService.getMySelection();
+});
+
