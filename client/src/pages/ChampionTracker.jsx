@@ -64,11 +64,11 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
           placeholder="Search champions..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="search"
+          className="search secondary-background border"
         />
 
         {/* Scrollable grid */}
-        <div className="scroll-container custom-scrollbar">
+        <div className="scroll-container custom-scrollbar secondary-background border">
           <div className="grid">
             {filteredChamps.map((champ) => {
               const isCompleted = completedChamps[champ.id] === true;

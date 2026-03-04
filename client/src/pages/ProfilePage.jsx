@@ -105,6 +105,7 @@ const ProfilePage = ({ champByKey }) => {
         <div className="search-bar">
           <input
             type="text"
+            className="search border secondary-background"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter summoner name"
@@ -123,7 +124,7 @@ const ProfilePage = ({ champByKey }) => {
         }
 
         {profileMatches && (
-          <div className="scroll-container match-history-wrapper">
+          <div className="scroll-container match-history-wrapper secondary-background">
             <MatchHistory
               matches={profileMatches}
               champByKey={champByKey}
