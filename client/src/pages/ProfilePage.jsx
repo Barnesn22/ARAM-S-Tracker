@@ -98,33 +98,33 @@ const ProfilePage = ({ champByKey }) => {
     };
 
   return (
-    <div className="page custom-scrollbar">
-      <div className="header">
+    <div className="p-5 flex flex-col items-center custom-scrollbar">
+      <div className="p-5">
         <h1>Search Profile</h1>
 
-        <div className="search-bar">
+        <div className="flex mt-2 gap-5">
           <input
             type="text"
-            className="search border secondary-background"
+            className="w-1/1 p-2 rounded-lg border border-accent bg-secondary"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter summoner name"
           />
-          <button onClick={handleSearch}>Search</button>
+          <button className="!bg-black" onClick={handleSearch}>Search</button>
         </div>
       </div>
 
       {loading && <p>Loading...</p>}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-red-500 pl-20">{error}</p>}
 
-      <div className="profile-wrapper">
+      <div className="w-3/4 flex">
 
         {profileStats && 
             <ProfileStats stats={profileStats}/>
         }
 
         {profileMatches && (
-          <div className="scroll-container match-history-wrapper secondary-background">
+          <div className="p-4 flex-col w-2/3 flex rounded-lg bg-secondary border border-accent">
             <MatchHistory
               matches={profileMatches}
               champByKey={champByKey}

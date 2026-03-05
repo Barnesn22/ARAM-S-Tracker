@@ -17,7 +17,7 @@ const MatchCard = ({ match, champByKey }) => {
     }
 
   return (
-    <div className={`match-card ${player.win ? "win" : "loss"}`}>
+    <div className={`flex flex-col rounded-lg overflow-hidden my-3 ${player.win ? "bg-blue-900/30" : "bg-red-900/30"}`}>
       
       {/* CLICKABLE COLLAPSED VIEW */}
       <div className="match-summary" onClick={() => setExpanded(!expanded)}>

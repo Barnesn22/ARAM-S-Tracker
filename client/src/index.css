@@ -1,3 +1,6 @@
+@import "tailwindcss";
+@import "../node_modules/tailwindcss/theme.css";
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -49,7 +52,7 @@ a:hover {
     margin: auto;
 }
 
-.border {
+.border-mine {
   border: 1px solid #444;
   border-radius: 10px;
 }
@@ -112,15 +115,6 @@ body {
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.search {
-  width: 100%;
-  padding: 10px;
-  margin: 20px 0;
-  color: #f0f0f0;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
 .header-bar {
   display: flex;
   justify-content: flex-end;
@@ -158,12 +152,6 @@ body {
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #555 transparent
-}
-
-.profile-wrapper {
-  width: 75%;
-  display: flex;
-  flex: 1;
 }
 
 .header-bar button {
