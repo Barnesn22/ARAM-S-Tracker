@@ -5,6 +5,7 @@ const ChampionDisplay = ({ champId, champByKey, size = 32 }) => {
 
   return (
     <img
+      className="rounded-sm"
       src={champ.image}
       alt={champ.name}
       style={{ width: size, height: size }}

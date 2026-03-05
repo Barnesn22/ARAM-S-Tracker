@@ -74,17 +74,16 @@ const champByKey = useMemo(() => {
 
   return (
     <Router>
-      <div style={{ height: "100vh", backgroundColor: "#1e1e2f", color: "#f0f0f0" }}>
-        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <div className="header-bar">
+      <div className="text-white bg-primary h-screen">
+        <div className="h-1/1 flex flex-col">
+          <div className="header-bar bg-[#1e1e1e] text-white [-webkit-app-region:drag]">
             <button
-              className="menu-button"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               ☰
             </button>
 
-            <div className="window-controls">
+            <div>
               <button onClick={() => window.electronAPI.minimize()}>_</button>
               <button onClick={() => window.electronAPI.maximize()}>⬜</button>
               <button onClick={() => window.electronAPI.close()}>X</button>
@@ -94,16 +93,16 @@ const champByKey = useMemo(() => {
           {/* Sidebar */}
           {/* Sidebar Overlay */}
           {menuOpen && (
-            <div className="side-menu-overlay" onClick={() => setMenuOpen(false)}>
-              <div className="side-menu" onClick={(e) => e.stopPropagation()}>
-                <Link to="/" onClick={() => setMenuOpen(false)}>Tracker</Link>
-                <Link to="/champ-select" onClick={() => setMenuOpen(false)}>Champ Select</Link>
-                <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile View</Link>
+            <div className="absolute top-[50px] bottom-0 z-10 w-1/1 bg-[rgba(0,0,0,0.3)] flex" onClick={() => setMenuOpen(false)}>
+              <div className="w-1/8 bg-secondary p-5 flex flex-col gap-4 animate-[slideIn_0.2s_ease-out] rounded-e-lg" onClick={(e) => e.stopPropagation()}>
+                <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/" onClick={() => setMenuOpen(false)}>Tracker</Link>
+                <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/champ-select" onClick={() => setMenuOpen(false)}>Champ Select</Link>
+                <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/profile" onClick={() => setMenuOpen(false)}>Profile View</Link>
               </div>
             </div>
           )}
 
-          <div style={{ flex: 1, overflowY: "auto" }} className="custom-scrollbar">
+          <div className="flex overflow-y-auto flex-col custom-scrollbar">
             <Routes>
               <Route path="/" element={
                 <ChampionTracker 

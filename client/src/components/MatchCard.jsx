@@ -20,19 +20,16 @@ const MatchCard = ({ match, champByKey }) => {
     <div className={`flex flex-col rounded-lg overflow-hidden my-3 ${player.win ? "bg-blue-900/30" : "bg-red-900/30"}`}>
       
       {/* CLICKABLE COLLAPSED VIEW */}
-      <div className="match-summary" onClick={() => setExpanded(!expanded)}>
-        
-        {/* Result Bar */}
-        <div className="result-bar" />
+      <div className="flex items-center p-3" onClick={() => setExpanded(!expanded)}>
 
         {/* Game Info */}
-        <div className="game-info">
+        <div className="w-1/6">
           <div>{match.queue_type}</div>
           <div>{formatDuration(match.game_duration)}</div>
         </div>
 
         {/* Big Champion + KDA */}
-        <div className="main-player">
+        <div className="flex items-center gap-3">
           <div className="big-champ">
             <ChampionDisplay
               champId={player.champ_id}
@@ -41,19 +38,19 @@ const MatchCard = ({ match, champByKey }) => {
             />
           </div>
 
-          <div className="kda">
-            <div className="kda-score">
+          <div>
+            <div className="font-bold text-md">
               {player.kills}/{player.deaths}/{player.assists}
             </div>
-            <div className="damage">
+            <div className="text-sm">
               {player.total_damage_dealt.toLocaleString()} dmg
             </div>
           </div>
         </div>
 
         {/* Team Columns */}
-        <div className="teams">
-          <div className="team-column">
+        <div className="flex gap-5 ml-auto">
+          <div className="flex flex-col gap-1">
             {team1.map(p => (
               <SmallParticipant
                 key={p.puuid}
@@ -63,7 +60,7 @@ const MatchCard = ({ match, champByKey }) => {
             ))}
           </div>
 
-          <div className="team-column">
+          <div className="flex flex-col gap-1">
             {team2.map(p => (
               <SmallParticipant
                 key={p.puuid}
@@ -78,7 +75,7 @@ const MatchCard = ({ match, champByKey }) => {
 
       {/* EXPANDED VIEW (placeholder) */}
       {expanded && (
-        <div className="match-details">
+        <div className="">
           Detailed stats coming here later
         </div>
       )}
