@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "../node_modules/tailwindcss/theme.css";
+@import "../tailwindcss/theme.css";
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;

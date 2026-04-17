@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as lcuService from "./lcuService.js";
+import { autoUpdater } from "electron-updater";
 
 let win;
 
@@ -103,3 +104,6 @@ ipcMain.handle("get-my-selection", async () => {
   return await lcuService.getMySelection();
 });
 
+app.whenReady().then(() => {
+  autoUpdater.checkForUpdatesAndNotify();
+});

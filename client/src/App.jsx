@@ -3,6 +3,8 @@ import { useEffect, useState, useMemo } from "react";
 import ChampionTracker from "./pages/ChampionTracker.jsx";
 import ChampionSelect from "./pages/ChampionSelect.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import DataExplorer from "./pages/DataExplorer.jsx";
+import ChampionsPage from "./pages/Champions.jsx"
 
 function App() {
   const [completedChamps, setCompleted] = useState({});
@@ -30,7 +32,8 @@ function App() {
           name: champ.name,
           id: champ.id,
           image: `https://ddragon.leagueoflegends.com/cdn/${latestVersion}/img/champion/${champ.image.full}`,
-          key: champ.key
+          key: champ.key,
+          tags: champ.tags
         }));
 
         champArray.sort((a, b) => a.name.localeCompare(b.name));
@@ -98,11 +101,13 @@ const champByKey = useMemo(() => {
                 <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/" onClick={() => setMenuOpen(false)}>Tracker</Link>
                 <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/champ-select" onClick={() => setMenuOpen(false)}>Champ Select</Link>
                 <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/profile" onClick={() => setMenuOpen(false)}>Profile View</Link>
+                <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/data-explorer" onClick={() => setMenuOpen(false)}>Data Explorer</Link>
+                <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/champions" onClick={() => setMenuOpen(false)}>Champions</Link>
               </div>
             </div>
           )}
 
-          <div className="flex overflow-y-auto flex-col custom-scrollbar">
+          <div className="flex flex-1 overflow-y-auto flex-col custom-scrollbar">
             <Routes>
               <Route path="/" element={
                 <ChampionTracker 
@@ -119,6 +124,8 @@ const champByKey = useMemo(() => {
                   version={version}
                   champByKey={champByKey} />} />
               <Route path="/profile" element={<ProfilePage champByKey={champByKey}/>} />
+              <Route path="/data-explorer" element={<DataExplorer />} />
+              <Route path="/champions" element={<ChampionsPage champions={champions} />} />
             </Routes>
           </div>
         </div>

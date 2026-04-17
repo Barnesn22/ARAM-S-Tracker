@@ -8,6 +8,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
   const [winrates, setWinrates] = useState([]);
   const [initialSelection, setInitialSelection] = useState(false);
   const [options, setOptions] = useState([]);
+  const testing = false;
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -27,49 +28,62 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
   }, [])
   
   const getChampSelect = async () => {
-    try {
-      const phase = await window.electronAPI.getGamePhase();
-       
-
-      if (phase !== "ChampSelect") {5
-        setPicks([]);
-        setBench([]);
-        setInChampSelect(false);
-        setInitialSelection(false);
-        return;
-      }
-
+    if (testing) {
       setInChampSelect(true);
+      setInitialSelection(true);
+      const teamPicks = [
+        { Summoner: "Faker", champ: champByKey[157] || null },       // Yasuo
+        { Summoner: "Caps", champ: champByKey[238] || null },        // Zed
+        { Summoner: "Chovy", champ: champByKey[99] || null },        // Lux
+        { Summoner: "Ruler", champ: champByKey[22] || null },        // Ashe
+        { Summoner: "Keria", champ: champByKey[412] || null },       // Thresh
+      ];
+      setPicks(teamPicks)
+    } 
+    else {
+      try {
+        const phase = await window.electronAPI.getGamePhase();
+        
 
-      const mySelection = await window.electronAPI.getMySelection();
-      console.log("Selection: ", mySelection["championId"])
-      if (mySelection["championId"] == 0) {
-        setInitialSelection(true);
-        const response = await window.electronAPI.getInitialChamps();
-        setOptions(response)
+        if (phase !== "ChampSelect") {5
+          setPicks([]);
+          setBench([]);
+          setInChampSelect(false);
+          setInitialSelection(false);
+          return;
+        }
+
+        setInChampSelect(true);
+
+        const mySelection = await window.electronAPI.getMySelection();
+        console.log("Selection: ", mySelection["championId"])
+        if (mySelection["championId"] == 0) {
+          setInitialSelection(true);
+          const response = await window.electronAPI.getInitialChamps();
+          setOptions(response)
+        }
+        else {
+          setInitialSelection(false)
+        }
+
+        const data = await window.electronAPI.getChampSelect();
+        const bench = data["benchChampions"];
+        const picks = data["myTeam"];
+
+        const benchChamps = bench.map((b) => champByKey[b["championId"]] || null);
+        setBench(benchChamps);
+
+        // Map picks: convert championId → champ object + keep Summoner name
+        const teamPicks = picks.map((p) => ({
+          Summoner: p["gameName"],
+          champ: champByKey[p["championId"]] || null,
+        }));
+        setPicks(teamPicks);
+
+      } catch (err) {
+        console.error(err);
+      } finally {
       }
-      else {
-        setInitialSelection(false)
-      }
-      console.log(options)
-
-      const data = await window.electronAPI.getChampSelect();
-      const bench = data["benchChampions"];
-      const picks = data["myTeam"];
-
-      const benchChamps = bench.map((b) => champByKey[b["championId"]] || null);
-      setBench(benchChamps);
-
-      // Map picks: convert championId → champ object + keep Summoner name
-      const teamPicks = picks.map((p) => ({
-        Summoner: p["gameName"],
-        champ: champByKey[p["championId"]] || null,
-      }));
-      setPicks(teamPicks);
-
-    } catch (err) {
-      console.error(err);
-    } finally {
     }
   };
 
@@ -85,37 +99,22 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
   }, []);
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        color: "#f0f0f0",
-        backgroundColor: "#1e1e2f",
-      }}
-    >
-      {/* Centered button */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+    <div className="flex flex-col p-5 text-[#f0f0f0] bg-[#1e1e2f]">
+      
+      {/* Top status */}
+      <div className="flex justify-center mb-5">
         {!inChampSelect && (
-          <p style={{ textAlign: "center", color: "#f44336", fontWeight: "bold", margin: "20px 0" }}>
+          <p className="text-center text-red-500 font-bold my-5">
             Not in Champ Select
           </p>
         )}
       </div>
 
-      {/* Bench champions across the top */}
+      {/* Bench */}
       {inChampSelect && (
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            marginBottom: "20px",
-            overflowX: "auto",
-            paddingBottom: "10px",
-            justifyContent: "center"
-          }}
-        >
+        <div className="flex gap-2.5 overflow-x-auto pb-2 justify-center">
           {Array.from({ length: 10 }).map((_, index) => {
-            const champ = bench[index]; // may be undefined
-
+            const champ = bench[index];
             const isEmpty = !champ;
 
             const completed = champ
@@ -129,47 +128,22 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
             return (
               <div
                 key={index}
-                style={{
-                  width: "100px",
-                  height: "120px",
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                  border: completed ? "3px solid #4caf50" : "3px solid #555",
-                  flexShrink: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  backgroundColor: "#2a2a3a",
-                }}
-                title={
-                  champ
-                    ? `${champ.name} - Winrate: ${(winrate * 100).toFixed(2)}%`
-                    : "Empty slot"
-                }
+                className={`w-[100px] h-[120px] rounded-lg overflow-hidden flex-shrink-0 flex flex-col items-center bg-[#2a2a3a]
+                  ${completed ? "border-4 border-green-500" : "border-4 border-gray-600"}`}
               >
                 <img
                   src={
                     champ
                       ? champ.image
-                      : "../assets/ChampionSquare.webp" // your default image
+                      : "../assets/ChampionSquare.webp"
                   }
                   alt={champ ? champ.name : "Empty"}
-                  style={{
-                    width: "100%",
-                    height: "100px",
-                    objectFit: "cover",
-                    opacity: isEmpty ? 0.4 : 1, // slightly faded empty slots
-                  }}
+                  className={`w-full h-[100px] object-cover ${
+                    isEmpty ? "opacity-40" : ""
+                  }`}
                 />
 
-                <span
-                  style={{
-                    marginTop: "4px",
-                    fontSize: "14px",
-                    color: "#f0f0f0",
-                    fontWeight: "bold",
-                  }}
-                >
+                <span className="mt-1 text-sm font-bold">
                   {champ ? `${(winrate * 100).toFixed(2)}%` : "--"}
                 </span>
               </div>
@@ -178,80 +152,60 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
         </div>
       )}
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start", // ensures same top alignment
-          gap: "40px",
-          marginTop: "20px",
-          width: "90%",
-          height: "100%",
-        }}
-      >
-        {/* Picks along the left side */}
-        {inChampSelect && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-            }}
-          >
-            {picks.map((p) => {
-              // Use default champ object if p.champ is null
-              const champ = p.champ || {
-                id: -1,
-                name: "Unknown",
-                image: "../assets/ChampionSquare.webp", 
-              };
+      {/* MAIN AREA */}
+      <div className="flex flex-1 gap-10 w-[90%]">
+        
+        {/* LEFT: Picks */}
+        <div className="flex flex-col py-2 w-[300px] gap-2">
+          {picks.map((p) => {
+            const champ = p.champ || {
+              id: -1,
+              name: "Unknown",
+              image: "../assets/ChampionSquare.webp",
+            };
 
-              const completed = completedChamps[champ.id] === true;
+            const completed = completedChamps[champ.id] === true;
+            const winrate = getWinrate(champ.key);
 
-              return (
-                <div
-                  key={p.Summoner}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    backgroundColor: "#333",
-                    padding: "5px 10px",
-                    borderRadius: "8px",
-                    width: "220px",
-                  }}
-                >
-                  <img
-                    src={champ.image}
-                    alt={champ.name}
-                    style={{
-                      width: "60px",
-                      height: "60px",
-                      borderRadius: "4px",
-                      border: completed ? "3px solid #4caf50" : "3px solid #555",
-                    }}
-                  />
-                  <span>{p.Summoner}</span>
+            return (
+              <div
+                key={p.Summoner}
+                className="flex items-center py-2 gap-3 bg-[#333] px-3 rounded-lg w-full"
+                style={{ height: 'calc(15vh - 8px)' }}
+              >
+                {/* LEFT: image + winrate */}
+                <div className="flex flex-col h-full items-center flex-shrink-0">
+                  <div className="flex-1 flex items-center pt-3">
+                    <img
+                      src={champ.image}
+                      alt={champ.name}
+                      className={`w-25 aspect-square object-cover rounded
+                        ${completed ? "border-4 border-green-500" : "border-4 border-gray-600"}`}
+                    />
+                  </div>
+
+                  <span className="text-md text-gray-300">
+                    {winrate !== undefined
+                      ? `${(winrate * 100).toFixed(1)}%`
+                      : "—"}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
 
-        {/* MIDDLE – Champion Options */}
+                {/* RIGHT: summoner */}
+                <div className="flex-1 min-w-0 flex items-center">
+                  <span className="truncate text-lg">
+                    {p.Summoner}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* MIDDLE: Options */}
         {initialSelection && (
-          <div
-            style={{
-              display: "flex",
-              flex: 1,
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: "15px",
-              }}
-            >
+          <div className="flex flex-1 justify-center items-center">
+            <div className="flex gap-4">
               {options.map((c) => {
                 const champ = champByKey[c];
                 const winrate = getWinrate(champ.key) || 0;
@@ -260,33 +214,16 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
                 return (
                   <div
                     key={champ.id}
-                    style={{
-                      borderRadius: "10px",
-                      overflow: "hidden",
-                      border: completed ? "3px solid #4caf50" : "3px solid #555",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
+                    className={`rounded-lg overflow-hidden flex flex-col items-center
+                      ${completed ? "border-4 border-green-500" : "border-4 border-gray-600"}`}
                   >
                     <img
                       src={`https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champ.id}_0.jpg`}
                       alt={champ.name}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        flexGrow: 1,
-                        objectFit: "contain",
-                      }}
+                      className="h-full object-contain"
                     />
-                    <span
-                      style={{
-                        marginTop: "4px",
-                        fontSize: "14px",
-                        color: "#f0f0f0",
-                        fontWeight: "bold",
-                      }}
-                    >
+
+                    <span className="mt-1 text-lg font-bold">
                       {(winrate * 100).toFixed(2)}%
                     </span>
                   </div>
@@ -295,6 +232,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
