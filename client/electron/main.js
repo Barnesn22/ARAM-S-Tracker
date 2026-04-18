@@ -6,6 +6,8 @@ import * as lcuService from "./lcuService.js";
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
 
+console.log("main file loaded")
+
 let win;
 
 // Compute __dirname manually
@@ -105,6 +107,24 @@ ipcMain.handle("get-my-selection", async () => {
   return await lcuService.getMySelection();
 });
 
+// Auto Update
+
 app.whenReady().then(() => {
   autoUpdater.checkForUpdatesAndNotify();
+});
+
+autoUpdater.on('checking-for-update', () => {
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', () => {
+  console.log('Update available.');
+});
+
+autoUpdater.on('update-not-available', () => {
+  console.log('No update available.');
+});
+
+autoUpdater.on('error', (err) => {
+  console.log('Error in auto-updater:', err);
 });
