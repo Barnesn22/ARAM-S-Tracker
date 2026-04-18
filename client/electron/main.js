@@ -3,7 +3,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as lcuService from "./lcuService.js";
-import { autoUpdater } from "electron-updater";
+import pkg from 'electron-updater';
+const { autoUpdater } = pkg;
 
 let win;
 
@@ -46,7 +47,7 @@ function createWindow() {
   });
 
   if (app.isPackaged) {
-    const indexPath = path.join(app.getAppPath(), "dist", "index.html");
+    const indexPath = path.join(app.getAppPath(), "dist-vite", "index.html");
     win.loadFile(indexPath);
   } else {
     win.loadURL("http://localhost:5173");

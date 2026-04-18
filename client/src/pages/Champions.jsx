@@ -15,7 +15,9 @@ export default function ChampionsPage({ champions }) {
   async function fetchStats() {
     setLoading(true);
 
-    const { data, error } = await supabase.rpc("get_champion_stats");
+    const { data, error } = await supabase
+        .from('champion_stats')  // your materialized view
+        .select('*');
 
     if (error) {
       console.error(error);
@@ -126,7 +128,7 @@ export default function ChampionsPage({ champions }) {
     <div className="p-5">
       <h1 className="text-center mb-4">Champion Stats</h1>
 
-      <div className="overflow-y-auto max-h-[80vh] border border-accent rounded-lg">
+      <div className="w-3/5 place-self-center overflow-y-auto max-h-[80vh] border border-accent rounded-lg">
         <table className="w-full text-sm">
           <thead className="bg-secondary sticky top-0">
             <tr>
@@ -160,7 +162,7 @@ export default function ChampionsPage({ champions }) {
                   <img
                     src={champ.image}
                     alt={champ.name}
-                    className="w-12 h-12 rounded"
+                    className="w-16 h-16 rounded"
                   />
                   {champ.name}
                 </td>

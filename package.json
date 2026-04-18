@@ -2,5 +2,8 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "tailwindcss": "^4.2.1"
+  },
+  "dependencies": {
+    "electron": "^41.2.1"
   }
 }
