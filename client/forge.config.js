@@ -44,13 +44,8 @@ export default {
   },
   makers: [
     {
-      name: '@electron-forge/maker-nsis',
-      config: {
-        oneClick: false,
-        perMachine: false,
-        allowToChangeInstallationDirectory: true,
-      },
-    },
+      name: '@electron-forge/maker-squirrel'
+    }
   ],
   publishers: [
     {
