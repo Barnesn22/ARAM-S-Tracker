@@ -1,7 +1,7 @@
 {
-  "name": "aram-app",
+  "name": "bridge-buddy",
   "private": true,
-  "version": "0.0.7",
+  "version": "0.1.0",
   "type": "module",
   "main": "electron/main.js",
   "description": "League of Legends ARAM stats tracker app",
@@ -15,7 +15,7 @@
     "dist": "npm run build && electron-builder",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "clean": "rimraf out",
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
     "make": "npm run clean && npm run build && electron-forge make",
     "publish": "npm run build && electron-builder --publish always"
   },
@@ -29,8 +29,8 @@
     "react-router-dom": "^7.13.0"
   },
   "build": {
-    "appId": "com.NoahBarnes.aramapp",
-    "productName": "ARAM App",
+    "appId": "com.NoahBarnes.bridgebuddy",
+    "productName": "Bridge Buddy",
     "files": [
       "dist-vite/**/*",
       "electron/**/*",
@@ -46,7 +46,12 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/favicon.ico"
+    },
+    "nsis": {
+      "installerIcon": "build/favicon.ico",
+      "uninstallerIcon": "build/favicon.ico"
     }
   },
   "config": {

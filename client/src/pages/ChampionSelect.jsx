@@ -135,7 +135,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
                   src={
                     champ
                       ? champ.image
-                      : "../public/ChampionSquare.webp"
+                      : "./ChampionSquare.webp"
                   }
                   alt={champ ? champ.name : "Empty"}
                   className={`w-full h-[100px] object-cover ${
@@ -161,7 +161,7 @@ export default function ChampionSelect({ completedChamps, champions, idToNameMap
             const champ = p.champ || {
               id: -1,
               name: "Unknown",
-              image: "../public/ChampionSquare.webp",
+              image: "./ChampionSquare.webp",
             };
 
             const completed = completedChamps[champ.id] === true;
