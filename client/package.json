@@ -1,7 +1,7 @@
 {
   "name": "aram-app",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "main": "electron/main.js",
   "description": "League of Legends ARAM stats tracker app",
@@ -17,7 +17,7 @@
     "package": "electron-forge package",
     "clean": "rimraf out",
     "make": "npm run clean && npm run build && electron-forge make",
-    "publish": "electron-forge publish"
+    "publish": "electron-builder --publish always"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
@@ -28,6 +28,8 @@
     "react-router-dom": "^7.13.0"
   },
   "build": {
+    "appId": "com.NoahBarnes.aramapp",
+    "productName": "ARAM App",
     "files": [
       "dist-vite/**/*",
       "electron/**/*",
@@ -38,9 +40,13 @@
       {
         "provider": "github",
         "owner": "Barnesn22",
-        "repo": "ARAM-S-Tracker"
+        "repo": "ARAM-S-Tracker",
+        "releaseType": "release"
       }
-    ]
+    ],
+    "win": {
+      "target": "nsis"
+    }
   },
   "config": {
     "forge": "./forge.config.js"

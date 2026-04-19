@@ -42,11 +42,6 @@ export default {
       return true;
     },
   },
-  makers: [
-    {
-      name: '@electron-forge/maker-squirrel'
-    }
-  ],
   publishers: [
     {
       name: '@electron-forge/publisher-github',
