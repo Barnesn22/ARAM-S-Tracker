@@ -4,9 +4,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as lcuService from "./lcuService.js";
 import pkg from 'electron-updater'
+import log from 'electron-log'
 const { autoUpdater } = pkg;
 
-const log = require('electron-log');
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
 
