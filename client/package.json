@@ -1,7 +1,7 @@
 {
   "name": "aram-app",
   "private": true,
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "main": "electron/main.js",
   "description": "League of Legends ARAM stats tracker app",
@@ -17,7 +17,7 @@
     "package": "electron-forge package",
     "clean": "rimraf out",
     "make": "npm run clean && npm run build && electron-forge make",
-    "publish": "electron-builder --publish always"
+    "publish": "npm run build && electron-builder --publish always"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
