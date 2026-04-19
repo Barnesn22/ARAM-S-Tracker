@@ -3,10 +3,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import * as lcuService from "./lcuService.js";
-import pkg from 'electron-updater';
+import pkg from 'electron-updater'
 const { autoUpdater } = pkg;
 
-console.log("main file loaded")
+const log = require('electron-log');
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
 let win;
 
