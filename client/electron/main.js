@@ -42,7 +42,7 @@ function createWindow() {
     width,
     height,
     frame: false,
-    icon: path.join(__dirname, "..", "assets", "favicon.ico"),
+    icon: path.join(__dirname, "..", "public", "favicon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"), // __dirname points to electron/, // Must point to preload
       contextIsolation: true, // Important for security
