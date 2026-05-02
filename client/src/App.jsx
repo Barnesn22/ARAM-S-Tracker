@@ -180,7 +180,7 @@ const champByKey = useMemo(() => {
           {/* Sidebar */}
           {/* Sidebar Overlay */}
           {menuOpen && (
-            <div className="absolute top-[50px] bottom-0 z-10 w-1/1 bg-[rgba(0,0,0,0.3)] flex" onClick={() => setMenuOpen(false)}>
+            <div className="absolute top-[63px] bottom-0 z-10 w-1/1 bg-[rgba(0,0,0,0.3)] flex" onClick={() => setMenuOpen(false)}>
               <div className="w-1/8 bg-secondary p-5 flex flex-col gap-4 animate-[slideIn_0.2s_ease-out] rounded-e-lg" onClick={(e) => e.stopPropagation()}>
                 <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/" onClick={() => setMenuOpen(false)}>Tracker</Link>
                 <Link className="border rounded-lg p-2 text-md hover:text-blue-500 text-[#f0f0f0]" to="/champ-select" onClick={() => setMenuOpen(false)}>Champ Select</Link>
