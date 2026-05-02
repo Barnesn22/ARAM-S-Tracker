@@ -56,94 +56,162 @@ export default function ChampionStatsView({ champ, itemWR, augmentsByRarity, win
       <div className="flex-1 overflow-y-auto min-h-0 hidden-scrollbar">
         {activeTab === "items" && (
           <div className="flex justify-center">
-            <div className="grid grid-cols-5 gap-4">
-              {topItems.map((item) => (
-                <div key={item.item_id} className="flex flex-col items-center">
-                  <img
-                    src={`https://ddragon.leagueoflegends.com/cdn/14.10.1/img/item/${item.item_id}.png`}
-                    className="w-16 h-16"
-                  />
-                  <p className="text-sm mt-1">
-                    {(item.winrate * 100).toFixed(1)}%
-                  </p>
+            <div className="w-full max-w-5xl">
+              <div className="bg-[#1a1a2e] rounded-xl p-6 shadow-2xl border border-[#2a2a3a]">
+                <h3 className="text-xl font-bold text-white mb-6 text-center">Top Items by Winrate</h3>
+                <div className="grid grid-cols-5 gap-4">
+                  {topItems.map((item, index) => (
+                    <div 
+                      key={item.item_id} 
+                      className="flex flex-col items-center bg-[#2a2a3a] rounded-lg p-3 hover:bg-[#3a3a4a] transition-all duration-200 hover:scale-105 hover:shadow-lg group relative"
+                    >
+                      <div className="relative">
+                        <img
+                          src={`https://ddragon.leagueoflegends.com/cdn/14.10.1/img/item/${item.item_id}.png`}
+                          className="w-16 h-16 rounded-lg"
+                        />
+                        <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          {index + 1}
+                        </div>
+                      </div>
+                      <p className="text-sm font-semibold text-white mt-2">
+                        {(item.winrate * 100).toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {item.games} games
+                      </p>
+                      <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black text-white text-xs p-2 rounded shadow-lg w-48 z-50 pointer-events-none">
+                        <div className="font-bold">{item.meta?.name || 'Unknown Item'}</div>
+                        <div>Win Rate: {(item.winrate * 100).toFixed(2)}%</div>
+                        <div>Games: {item.games}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === "augments" && (
           <div className="flex justify-center">
-            <div className="grid grid-cols-3 gap-8 max-w-4xl">
-              {rarityOrder.map((rarity) => {
-                const list = Array.isArray(augmentsByRarity?.[rarity])
-                  ? augmentsByRarity[rarity]
-                  : [];
+            <div className="w-full max-w-6xl">
+              <div className="bg-[#1a1a2e] rounded-xl p-6 shadow-2xl border border-[#2a2a3a]">
+                <h3 className="text-xl font-bold text-white mb-6 text-center">Augments by Rarity</h3>
+                <div className="grid grid-cols-3 gap-8">
+                  {rarityOrder.map((rarity) => {
+                    const list = Array.isArray(augmentsByRarity?.[rarity])
+                      ? augmentsByRarity[rarity]
+                      : [];
 
-                return (
-                  <div key={rarity} className="flex flex-col items-center">
-                    <h3 className="text-lg font-bold mb-4">
-                      {rarity.replace("k", "").toUpperCase()}
-                    </h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      {list
-                        .slice()
-                        .sort((a, b) => b.winrate - a.winrate)
-                        .map((aug) => (
-                          <div
-                            key={aug.augment_id}
-                            className="flex flex-col items-center group relative"
-                          >
-                            <div className="relative">
-                              <img
-                                src={convertToCDragon(aug.meta.augmentSmallIconPath)}
-                                className="w-12 h-12 cursor-pointer"
-                              />
-                              <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black text-white text-xs p-2 rounded shadow-lg w-48 z-50 pointer-events-none">
-                                <div className="font-bold">{aug.meta?.nameTRA}</div>
-                                <div>Pick: {(aug.playrate * 100).toFixed(2)}%</div>
-                                <div>Win: {(aug.winrate * 100).toFixed(2)}%</div>
+                    const rarityColors = {
+                      "kSilver": "bg-gray-500",
+                      "kGold": "bg-yellow-500", 
+                      "kPrismatic": "bg-purple-500"
+                    };
+
+                    return (
+                      <div key={rarity} className="flex flex-col">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className={`w-3 h-3 rounded-full ${rarityColors[rarity] || "bg-gray-500"} mr-2`}></div>
+                          <h3 className="text-lg font-bold text-white">
+                            {rarity.replace("k", "").toUpperCase()}
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {list
+                            .slice()
+                            .sort((a, b) => b.winrate - a.winrate)
+                            .map((aug, index) => (
+                              <div
+                                key={aug.augment_id}
+                                className="flex flex-col items-center bg-[#2a2a3a] rounded-lg p-3 hover:bg-[#3a3a4a] transition-all duration-200 hover:scale-105 hover:shadow-lg group relative"
+                              >
+                                <div className="relative">
+                                  <img
+                                    src={convertToCDragon(aug.meta.augmentSmallIconPath)}
+                                    className="w-12 h-12 rounded-lg cursor-pointer"
+                                  />
+                                  {index < 3 && (
+                                    <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                      {index + 1}
+                                    </div>
+                                  )}
+                                </div>
+                                <p className="text-xs font-semibold text-white mt-2">
+                                  {(aug.winrate * 100).toFixed(1)}%
+                                </p>
+                                <div className="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black text-white text-xs p-2 rounded shadow-lg w-56 z-50 pointer-events-none">
+                                  <div className="font-bold">{aug.meta?.nameTRA || 'Unknown Augment'}</div>
+                                  <div>Pick Rate: {(aug.playrate * 100).toFixed(2)}%</div>
+                                  <div>Win Rate: {(aug.winrate * 100).toFixed(2)}%</div>
+                                  <div>Games: {aug.games}</div>
+                                </div>
                               </div>
-                            </div>
-                            <p className="text-xs mt-1">
-                              {(aug.winrate * 100).toFixed(0)}%
-                            </p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                );
-              })}
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === "counters" && (
-          <div className="flex justify-center items-center">
-            <div className="text-center text-gray-400">
-              <h3 className="text-2xl mb-4">Champion Counters</h3>
-              <p>Counter statistics coming soon...</p>
-              {/* Add counter data here */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <div className="bg-[#1a1a2e] rounded-xl p-8 shadow-2xl border border-[#2a2a3a] text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-[#2a2a3a] rounded-full flex items-center justify-center">
+                    <span className="text-2xl">⚔️</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Champion Counters</h3>
+                <p className="text-gray-400 mb-6">Counter statistics coming soon...</p>
+                <div className="bg-[#2a2a3a] rounded-lg p-4">
+                  <p className="text-sm text-gray-500">This section will show champions that perform well against {champ.name}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === "synergies" && (
-          <div className="flex justify-center items-center">
-            <div className="text-center text-gray-400">
-              <h3 className="text-2xl mb-4">Champion Synergies</h3>
-              <p>Synergy data coming soon...</p>
-              {/* Add synergy data here */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <div className="bg-[#1a1a2e] rounded-xl p-8 shadow-2xl border border-[#2a2a3a] text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-[#2a2a3a] rounded-full flex items-center justify-center">
+                    <span className="text-2xl">🤝</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Champion Synergies</h3>
+                <p className="text-gray-400 mb-6">Synergy data coming soon...</p>
+                <div className="bg-[#2a2a3a] rounded-lg p-4">
+                  <p className="text-sm text-gray-500">This section will show champions that work well with {champ.name}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {activeTab === "history" && (
-          <div className="flex justify-center items-center">
-            <div className="text-center text-gray-400">
-              <h3 className="text-2xl mb-4">Performance History</h3>
-              <p>Historical data coming soon...</p>
-              {/* Add performance history here */}
+          <div className="flex justify-center">
+            <div className="w-full max-w-4xl">
+              <div className="bg-[#1a1a2e] rounded-xl p-8 shadow-2xl border border-[#2a2a3a] text-center">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 bg-[#2a2a3a] rounded-full flex items-center justify-center">
+                    <span className="text-2xl">📈</span>
+                  </div>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Performance History</h3>
+                <p className="text-gray-400 mb-6">Historical data coming soon...</p>
+                <div className="bg-[#2a2a3a] rounded-lg p-4">
+                  <p className="text-sm text-gray-500">This section will show {champ.name}'s performance over time</p>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -106,14 +106,16 @@ export default function ChampionStats({ champions, champByKey, augmentMap, itemM
   const winrate = winrates.length > 0 ? winrates[0].winrate : 0;
 
   return (
-    <div className="flex flex-col h-full p-5 items-center">
-      <div className="w-full max-w-6xl flex-1">
-        <ChampionStatsView 
-          champ={champion}
-          itemWR={itemWR}
-          augmentsByRarity={augmentsByRarity} 
-          winrate={winrate}
-        />
+    <div className="min-h-screen">
+      <div className="flex flex-col h-full p-5 items-center">
+        <div className="w-full max-w-6xl flex-1">
+          <ChampionStatsView 
+            champ={champion}
+            itemWR={itemWR}
+            augmentsByRarity={augmentsByRarity} 
+            winrate={winrate}
+          />
+        </div>
       </div>
     </div>
   );

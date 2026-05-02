@@ -199,7 +199,7 @@ const champByKey = useMemo(() => {
             </div>
           )}
 
-          <div className="flex flex-1 overflow-y-auto flex-col hidden-scrollbar">
+          <div className="flex flex-1 overflow-y-auto flex-col custom-scrollbar">
             <Routes>
               <Route path="/" element={
                 <ChampionTracker 
