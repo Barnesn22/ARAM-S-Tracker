@@ -117,41 +117,47 @@ def insert_new_match_ids(match_ids):
 # ---------------------------
 
 def transform_and_load(match_json):
-    # games
+    game_id = match_json["gameId"]
+
+    # -----------------------
+    # Insert game
+    # -----------------------
     game_row = {
-        "match_id": match_json["gameId"],
+        "match_id": game_id,
         "game_creation": match_json["gameCreationDate"],
         "game_duration": match_json["gameDuration"],
         "game_mode": match_json["queueId"],
-        "patch": match_json["gameVersion"],
-        "map_id": match_json["mapId"]
+        "patch": match_json["gameVersion"]
     }
+
     try:
         supabase.table("games").insert(game_row).execute()
     except Exception as e:
-        print("ERROR: ", e)
+        print("ERROR inserting game:", e)
         return
-    # participants
+
+    # -----------------------
+    # Build identity lookup (avoid nested loop)
+    # -----------------------
+    identity_map = {
+        p["participantId"]: p["player"]
+        for p in match_json["participantIdentities"]
+    }
 
     participant_rows = []
-    participant_item_rows = []
-    participant_augment_rows = []
     summoner_rows = []
 
+    # -----------------------
+    # Build participant rows
+    # -----------------------
     for p in match_json["participants"]:
-        puuid = ""
-        p_id = p["participantId"]
-        for id in match_json["participantIdentities"]:
-            if id["participantId"] == p_id:
-                puuid = id["player"]["puuid"]
-                summoner_name = id["player"]["gameName"]
-                region = id["player"]["platformId"]
-                tagline = id["player"]["tagLine"]
-        
+        player = identity_map[p["participantId"]]
+
+        puuid = player["puuid"]
         stats = p["stats"]
 
-        participant_row = {
-            "match_id": match_json["gameId"],
+        participant_rows.append({
+            "match_id": game_id,
             "puuid": puuid,
             "champ_id": p["championId"],
             "team_id": p["teamId"],
@@ -170,45 +176,80 @@ def transform_and_load(match_json):
             "total_damage_taken": stats["totalDamageTaken"],
             "total_heal": stats["totalHeal"],
             "true_damage_dealt": stats["trueDamageDealtToChampions"]
-        }
+        })
 
-        participant_rows.append(participant_row)
-
-        # particpant_items
-        for slot in range(7):
-            participant_item_row = {
-                "item_id": stats[f'item{slot}'],
-                "slot": slot,
-                "puuid": puuid,
-                "match_id": match_json["gameId"]
-            }
-
-            participant_item_rows.append(participant_item_row)
-        
-        # participant_augments
-        for slot in range(1,7):
-            participant_augment_row = {
-                "puuid": puuid,
-                "augment_id": stats[f'playerAugment{slot}'],
-                "slot": slot
-            }
-
-            participant_augment_rows.append(participant_augment_row)
-
-        # summoners
-        summoner_row = {
+        summoner_rows.append({
             "puuid": puuid,
-            "summoner_name": summoner_name,
-            "region": region,
-            "tagline": tagline
-        }
-        
-        summoner_rows.append(summoner_row)
+            "summoner_name": player["gameName"],
+            "region": player["platformId"],
+            "tagline": player["tagLine"]
+        })
 
+    # -----------------------
+    # Upsert summoners
+    # -----------------------
     supabase.table("summoners").upsert(summoner_rows).execute()
-    supabase.table("participants").insert(participant_rows).execute()
+
+    # -----------------------
+    # Insert participants + RETURN IDs
+    # -----------------------
+    res = supabase.table("participants") \
+        .insert(participant_rows, returning="representation") \
+        .execute()
+
+    inserted_participants = res.data
+
+    if not inserted_participants:
+        print("ERROR: No participant IDs returned")
+        return
+
+    # -----------------------
+    # Build lookup map
+    # -----------------------
+    participant_map = {
+        (p["match_id"], p["puuid"]): p["id"]
+        for p in inserted_participants
+    }
+
+    participant_item_rows = []
+    participant_augment_rows = []
+
+    # -----------------------
+    # Build child rows using participant_id
+    # -----------------------
+    for p in match_json["participants"]:
+        player = identity_map[p["participantId"]]
+        puuid = player["puuid"]
+        stats = p["stats"]
+
+        participant_id = participant_map[(game_id, puuid)]
+
+        # Items
+        for slot in range(7):
+            participant_item_rows.append({
+                "participant_id": participant_id,
+                "item_id": stats[f"item{slot}"],
+                "slot": slot
+            })
+
+        # Augments
+        for slot in range(1, 7):
+            augment_id = stats[f"playerAugment{slot}"]
+
+            if augment_id == 0:
+                continue  # skip empty augment slots
+
+            participant_augment_rows.append({
+                "participant_id": participant_id,
+                "augment_id": augment_id,
+                "slot": slot
+            })
+
+    # -----------------------
+    # Insert child tables
+    # -----------------------
     supabase.table("participant_items").insert(participant_item_rows).execute()
-    #supabase.table("participant_augments").insert(participant_augment_rows).execute()
+    supabase.table("participant_augments").insert(participant_augment_rows).execute()
     
 port, auth_token = 0, 0
 
@@ -265,7 +306,6 @@ def main():
             transform_and_load(match_json)
 
             if not get_histories:
-                time.sleep(.2)
                 continue
             
             response = supabase.table("games").select("match_id").execute()
@@ -299,9 +339,7 @@ def main():
         except Exception as e:
             print("Error:", e)
             traceback.print_exc()
-            time.sleep(2)
 
-        time.sleep(.2)
 
 
 if __name__ == "__main__":

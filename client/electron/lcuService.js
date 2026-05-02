@@ -90,11 +90,43 @@ async function getMySelection() {
   return await lcuRequest("/lol-lobby-team-builder/champ-select/v1/session/my-selection")
 }
 
+async function getGameSession() {
+  return await lcuRequest("/lol-gameflow/v1/session")
+}
+
+async function getCurrentSummoner() {
+  return await lcuRequest("/lol-summoner/v1/current-summoner")
+}
+
+async function getGameEvents() {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  const res = await fetch("https://127.0.0.1:2999/liveclientdata/eventdata");
+  const data = await res.json();
+  return data;
+}
+
+async function getPlayerList() {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+  const res = await fetch("https://127.0.0.1:2999/liveclientdata/playerlist");
+  const data = await res.json();
+  return data;
+}
+
+async function getName(puuid) {
+  const res = await lcuRequest(`/lol-summoner/v2/summoners/puuid/${puuid}`);
+  return res.gameName;
+}
+
 export  {
   getChampSelect,
   getGamePhase,
   getPlayerChallenges,
   getInitialChamps,
   getMySelection,
+  getGameSession,
+  getCurrentSummoner,
+  getGameEvents,
+  getName,
+  getPlayerList
 };
 

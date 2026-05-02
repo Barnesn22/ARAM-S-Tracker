@@ -1,10 +1,21 @@
 {
+  "name": "aram-s-tracker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "League of Legends ARAM stats tracker application",
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "dev": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd client && npm run electron",
+    "install:all": "npm install && cd client && npm install",
+    "clean": "cd client && npm run clean",
+    "data:init": "cd server && python initializeChampions.py && python initializeItems.py && python initializeAugments.py",
+    "data:ingest": "cd server && python injestion.py"
+  },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.1",
-    "tailwindcss": "^4.2.1"
-  },
-  "dependencies": {
-    "electron": "^41.2.1"
-  },
-  "version": "0.0.1"
+    "concurrently": "^8.2.2"
+  }
 }

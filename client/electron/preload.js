@@ -13,5 +13,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getGamePhase: () => ipcRenderer.invoke("get-game-phase"),
   getInitialChamps: () => ipcRenderer.invoke("get-initial-champs"),
   getMySelection: () => ipcRenderer.invoke("get-my-selection"),
+  getGameSession: () => ipcRenderer.invoke("get-game-session"),
+  getCurrentSummoner: () => ipcRenderer.invoke("get-current-summoner"),
+  getGameEvents: () => ipcRenderer.invoke("get-game-events"),
+  getName: (puuid) => ipcRenderer.invoke("get-name", puuid),
+  getPlayerList: () => ipcRenderer.invoke("get-player-list")
 });
 

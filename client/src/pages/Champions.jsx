@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import { computeGapTiers, jenks } from "../utils/tierUtils";
 
 export default function ChampionsPage({ champions }) {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState("score");
@@ -24,13 +26,41 @@ export default function ChampionsPage({ champions }) {
       setLoading(false);
       return;
     }
-    console.log(data)
+
+    const minMax = (arr) => ({
+      min: Math.min(...arr),
+      max: Math.max(...arr),
+    });
+
+    const weightWR = 0.8;
+    const weightPR = 0.2;
+    const winrates = data.map(d => d["winrate"]);
+    const playrates = data.map(d => d["playrate"]);
+    const { min: minWR, max: maxWR } = minMax(winrates);
+    const { min: minPR, max: maxPR } = minMax(playrates);
+
+    const normalize = (v, min, max) =>
+      max === min ? 0 : (v - min) / (max - min);
+
+    const scores = data.map(d => {
+      const wr = normalize(d["winrate"], minWR, maxWR);
+      const pr = normalize(d["playrate"], minPR, maxPR);
+
+      return wr * weightWR + pr * weightPR;
+    });
+    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const variance =
+      scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length;
+
+    const std = Math.sqrt(variance);
 
     // attach champ metadata + compute tier
     const enriched = data.map((row) => {
       const champ = champions.find((c) => c.key == row.champ_id);
-      const score = row.winrate * Math.log(row.playrate)
-      const tier = getTier(score);
+      const normWR = (row.winrate - minWR) / (maxWR - minWR)
+      const normPR = (row.playrate - minPR) / (maxPR - minPR)
+      const score = normWR * weightWR + normPR * weightPR;
+      const tier = getTier(score, mean, std);
 
       return {
         ...row,
@@ -40,25 +70,9 @@ export default function ChampionsPage({ champions }) {
         score,
       };
     });
-    /*const withTiers = computeGapTiers(enriched, {
-    scoreKey: "score"
-    });
 
-    setData(withTiers);*/
-    const withClasses = jenks(enriched, "winrate", 5);
-    const tierMap = {
-        5: "S",
-        4: "A",
-        3: "B",
-        2: "C",
-        1: "D"
-        };
-
-    const withTiers = withClasses.map(d => ({
-        ...d,
-        tier: tierMap[d.jenksClass]
-    }));
-    setData(withTiers)
+    
+    setData(enriched)
     setLoading(false)
   }
 
@@ -95,11 +109,12 @@ export default function ChampionsPage({ champions }) {
     console.log(sortedData)
     }
 
-  function getTier(score) {
-    if (score > 3.2) return "S";
-    if (score > 3.0) return "A";
-    if (score > 2.8) return "B";
-    if (score > 2.6) return "C";
+  function getTier(score, mean, std) {
+    console.log(score, mean, std)
+    if (score > mean + std*1.5) return "S";
+    if (score > mean + std*.25) return "A";
+    if (score > mean - std*.25) return "B";
+    if (score > mean - std*1) return "C";
     return "D";
   }
 
@@ -119,6 +134,10 @@ export default function ChampionsPage({ champions }) {
     function getCellClass(key) {
     return sortKey === key ? "bg-black/30" : "";
     }
+
+  const handleChampionClick = (champKey) => {
+    navigate(`/champion/${champKey}`);
+  };
 
   if (loading) {
     return <div className="p-5">Loading...</div>;
@@ -156,7 +175,11 @@ export default function ChampionsPage({ champions }) {
 
           <tbody>
             {sortedData.map((champ) => (
-              <tr key={champ.champ_id} className="border-t border-accent">
+              <tr 
+                key={champ.champ_id} 
+                className="border-t border-accent cursor-pointer hover:bg-[#2a2a3a] transition-colors"
+                onClick={() => handleChampionClick(champ.champ_id)}
+              >
                 {/* Champ */}
                 <td className={`p-2 flex items-center gap-2 ${getCellClass("name")}`}>
                   <img

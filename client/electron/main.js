@@ -42,7 +42,7 @@ function createWindow() {
     width,
     height,
     frame: false,
-    icon: path.join(__dirname, "..", "public", "favicon.ico"),
+    icon: path.join(__dirname, "..", "build", "favicon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"), // __dirname points to electron/, // Must point to preload
       contextIsolation: true, // Important for security
@@ -107,6 +107,26 @@ ipcMain.handle("get-initial-champs", async () => {
 
 ipcMain.handle("get-my-selection", async () => {
   return await lcuService.getMySelection();
+});
+
+ipcMain.handle("get-game-session", async () => {
+  return await lcuService.getGameSession();
+});
+
+ipcMain.handle("get-current-summoner", async () => {
+  return await lcuService.getCurrentSummoner();
+});
+
+ipcMain.handle("get-game-events", async () => {
+  return await lcuService.getGameEvents();
+});
+
+ipcMain.handle("get-player-list", async () => {
+  return await lcuService.getPlayerList();
+});
+
+ipcMain.handle("get-name", async (event, puuid) => {
+  return await lcuService.getName(puuid);
 });
 
 // Auto Update

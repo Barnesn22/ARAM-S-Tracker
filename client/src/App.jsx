@@ -1,10 +1,12 @@
 import { HashRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import ChampionTracker from "./pages/ChampionTracker.jsx";
-import ChampionSelect from "./pages/ChampionSelect.jsx";
+import GamePhaseContainer from "./components/GamePhaseContainer.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import DataExplorer from "./pages/DataExplorer.jsx";
-import ChampionsPage from "./pages/Champions.jsx"
+import ChampionsPage from "./pages/Champions.jsx";
+import ChampionStats from "./pages/ChampionStats.jsx";
+import ChampionSearch from "./components/ChampionSearch.jsx";
 
 function App() {
   const [completedChamps, setCompleted] = useState({});
@@ -12,6 +14,8 @@ function App() {
   const [idToNameMap, setIdToNameMap] = useState({});
   const [version, setVersion] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [augments, setAugments] = useState([]);
+  const [items, setItems] = useState([]);
 
   useEffect(() => {
     const fetchChampions = async () => {
@@ -47,6 +51,42 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const load = async () => {
+      const res = await fetch(
+        "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/cherry-augments.json"
+      );
+
+      const augmentsMeta = await res.json();
+      const augmentMap = Object.fromEntries(
+        augmentsMeta.map(a => [a.id, a])
+      );
+
+      setAugments(augmentMap)
+    }
+    load();
+  }, [])
+
+  useEffect(() => {
+    const load = async() => {
+      const res = await fetch(
+          "https://ddragon.leagueoflegends.com/cdn/14.10.1/data/en_US/item.json"
+        );
+
+      const json = await res.json();
+
+      const map = Object.fromEntries(
+        Object.entries(json.data).map(([id, item]) => [
+          Number(id),
+          item
+        ])
+      );
+
+      setItems(map)
+    };
+    load();
+  }, [])
+
+  useEffect(() => {
     const map = {};
 
     champions.forEach((champ) => {
@@ -79,17 +119,24 @@ const champByKey = useMemo(() => {
     <Router>
       <div className="text-white bg-primary h-screen">
         <div className="h-1/1 flex flex-col">
-          <div className="header-bar bg-[#1e1e1e] text-white [-webkit-app-region:drag]">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              ☰
-            </button>
+          <div className="header-bar bg-[#1e1e1e] text-white flex items-center justify-between px-4 [-webkit-app-region:drag]">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="[-webkit-app-region:no-drag]"
+              >
+                ☰
+              </button>
+              
+              <div className="[-webkit-app-region:no-drag]">
+                <ChampionSearch champions={champions} />
+              </div>
+            </div>
 
             <div>
-              <button onClick={() => window.electronAPI.minimize()}>_</button>
-              <button onClick={() => window.electronAPI.maximize()}>⬜</button>
-              <button onClick={() => window.electronAPI.close()}>X</button>
+              <button onClick={() => window.electronAPI.minimize()} className="[-webkit-app-region:no-drag]">_</button>
+              <button onClick={() => window.electronAPI.maximize()} className="[-webkit-app-region:no-drag]">⬜</button>
+              <button onClick={() => window.electronAPI.close()} className="[-webkit-app-region:no-drag]">X</button>
             </div>
           </div>
 
@@ -107,7 +154,7 @@ const champByKey = useMemo(() => {
             </div>
           )}
 
-          <div className="flex flex-1 overflow-y-auto flex-col custom-scrollbar">
+          <div className="flex flex-1 overflow-y-auto flex-col hidden-scrollbar">
             <Routes>
               <Route path="/" element={
                 <ChampionTracker 
@@ -117,15 +164,24 @@ const champByKey = useMemo(() => {
                   version={version}
                   champByKey={champByKey} />} />
               <Route path="/champ-select" element={
-                <ChampionSelect
+                <GamePhaseContainer
                   completedChamps={completedChamps}
                   champions={champions}
                   idToNameMap={idToNameMap}
                   version={version}
-                  champByKey={champByKey} />} />
+                  champByKey={champByKey}
+                  augmentMap={augments}
+                  itemMap={items} />} />
               <Route path="/profile" element={<ProfilePage champByKey={champByKey}/>} />
               <Route path="/data-explorer" element={<DataExplorer />} />
               <Route path="/champions" element={<ChampionsPage champions={champions} />} />
+              <Route path="/champion/:championId" element={
+                <ChampionStats 
+                  champions={champions}
+                  champByKey={champByKey}
+                  augmentMap={augments}
+                  itemMap={items} 
+                />} />
             </Routes>
           </div>
         </div>

@@ -13,15 +13,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\"",
-    "make": "npm run clean && npm run build && electron-forge make",
-    "publish": "npm run build && electron-builder --publish always"
+    "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
     "axios": "^1.13.5",
+    "dotenv": "^17.4.2",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
     "react": "^19.2.0",
@@ -54,14 +51,7 @@
       "uninstallerIcon": "build/favicon.ico"
     }
   },
-  "config": {
-    "forge": "./forge.config.js"
-  },
   "devDependencies": {
-    "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/publisher-github": "^7.11.1",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.2.1",
     "@types/react": "^19.2.7",
@@ -70,6 +60,8 @@
     "autoprefixer": "^10.4.27",
     "electron": "^40.4.1",
     "electron-builder": "^26.8.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.8.3",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
