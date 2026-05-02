@@ -129,18 +129,27 @@ ipcMain.handle("get-name", async (event, puuid) => {
   return await lcuService.getName(puuid);
 });
 
-// Auto Update on startup
+// Auto Update on startup - check only, don't download
 app.whenReady().then(() => {
-  autoUpdater.checkForUpdatesAndNotify();
+  autoUpdater.checkForUpdates();
 });
 
 // Manual Update Handlers
 ipcMain.handle("check-for-updates", async () => {
   try {
-    autoUpdater.checkForUpdatesAndNotify();
+    autoUpdater.checkForUpdates();
     return { success: true, message: "Checking for updates..." };
   } catch (err) {
     return { success: false, message: "Error checking for updates", error: err.message };
+  }
+});
+
+ipcMain.handle("download-update", async () => {
+  try {
+    autoUpdater.downloadUpdate();
+    return { success: true, message: "Downloading update..." };
+  } catch (err) {
+    return { success: false, message: "Error downloading update", error: err.message };
   }
 });
 
@@ -162,6 +171,26 @@ autoUpdater.on('update-not-available', (info) => {
   console.log('No update available.');
   if (win) {
     win.webContents.send('update-status', { status: 'not-available', message: 'No update available' });
+  }
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Update downloaded.');
+  if (win) {
+    win.webContents.send('update-status', { status: 'downloaded', message: 'Update downloaded! Restarting...', info });
+  }
+  // Auto restart after download
+  autoUpdater.quitAndInstall();
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  console.log('Download progress:', progressObj);
+  if (win) {
+    win.webContents.send('update-status', { 
+      status: 'downloading', 
+      message: `Downloading update: ${Math.round(progressObj.percent)}%`,
+      progress: progressObj.percent 
+    });
   }
 });
 

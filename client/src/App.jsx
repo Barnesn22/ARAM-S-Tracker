@@ -17,6 +17,7 @@ function App() {
   const [augments, setAugments] = useState([]);
   const [items, setItems] = useState([]);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
 
   useEffect(() => {
     const fetchChampions = async () => {
@@ -114,8 +115,15 @@ function App() {
       window.electronAPI.onUpdateStatus((data) => {
         if (data.status === 'available') {
           setUpdateAvailable(true);
+          setDownloadProgress(null);
         } else if (data.status === 'not-available') {
           setUpdateAvailable(false);
+          setDownloadProgress(null);
+        } else if (data.status === 'downloading') {
+          setDownloadProgress(data.progress);
+        } else if (data.status === 'downloaded') {
+          setUpdateAvailable(false);
+          setDownloadProgress(null);
         }
       });
       
@@ -125,11 +133,11 @@ function App() {
     }
   }, []);
 
-  const checkForUpdates = async () => {
+  const downloadUpdate = async () => {
     if (window.electronAPI) {
-      const result = await window.electronAPI.checkForUpdates();
+      const result = await window.electronAPI.downloadUpdate();
       if (!result.success) {
-        setUpdateAvailable(false);
+        setDownloadProgress(null);
       }
     }
   };
@@ -161,11 +169,11 @@ const champByKey = useMemo(() => {
               
               {updateAvailable && (
                 <button
-                  onClick={checkForUpdates}
+                  onClick={downloadUpdate}
                   className="[-webkit-app-region:no-drag] px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm font-semibold animate-pulse"
                   title="Update available! Click to download"
                 >
-                  Update
+                  {downloadProgress !== null ? `${Math.round(downloadProgress)}%` : 'Update'}
                 </button>
               )}
             </div>

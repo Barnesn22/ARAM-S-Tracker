@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getName: (puuid) => ipcRenderer.invoke("get-name", puuid),
   getPlayerList: () => ipcRenderer.invoke("get-player-list"),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, data) => callback(data)),
   removeUpdateListener: () => ipcRenderer.removeAllListeners('update-status')
 });
