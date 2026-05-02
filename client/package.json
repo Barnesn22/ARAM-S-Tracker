@@ -1,7 +1,7 @@
 {
   "name": "bridge-buddy",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "electron/main.js",
   "description": "League of Legends ARAM stats tracker app",
@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
+    "publish": "npm run build && electron-builder --publish always",
     "clean": "powershell -Command \"Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue\""
   },
   "dependencies": {
