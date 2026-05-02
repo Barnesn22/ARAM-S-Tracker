@@ -9,6 +9,8 @@ const { autoUpdater } = pkg;
 
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = false;
 
 let win;
 
@@ -180,7 +182,9 @@ autoUpdater.on('update-downloaded', (info) => {
     win.webContents.send('update-status', { status: 'downloaded', message: 'Update downloaded! Restarting...', info });
   }
   // Auto restart after download
-  autoUpdater.quitAndInstall();
+  setTimeout(() => {
+    autoUpdater.quitAndInstall();
+  }, 2000);
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
