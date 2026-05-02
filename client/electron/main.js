@@ -129,24 +129,41 @@ ipcMain.handle("get-name", async (event, puuid) => {
   return await lcuService.getName(puuid);
 });
 
-// Auto Update
+// Manual Update Handlers
 
-app.whenReady().then(() => {
-  autoUpdater.checkForUpdatesAndNotify();
+ipcMain.handle("check-for-updates", async () => {
+  try {
+    autoUpdater.checkForUpdatesAndNotify();
+    return { success: true, message: "Checking for updates..." };
+  } catch (err) {
+    return { success: false, message: "Error checking for updates", error: err.message };
+  }
 });
 
 autoUpdater.on('checking-for-update', () => {
   console.log('Checking for update...');
+  if (win) {
+    win.webContents.send('update-status', { status: 'checking', message: 'Checking for updates...' });
+  }
 });
 
-autoUpdater.on('update-available', () => {
+autoUpdater.on('update-available', (info) => {
   console.log('Update available.');
+  if (win) {
+    win.webContents.send('update-status', { status: 'available', message: 'Update available!', info });
+  }
 });
 
-autoUpdater.on('update-not-available', () => {
+autoUpdater.on('update-not-available', (info) => {
   console.log('No update available.');
+  if (win) {
+    win.webContents.send('update-status', { status: 'not-available', message: 'No update available' });
+  }
 });
 
 autoUpdater.on('error', (err) => {
   console.log('Error in auto-updater:', err);
+  if (win) {
+    win.webContents.send('update-status', { status: 'error', message: 'Error checking for updates', error: err.message });
+  }
 });

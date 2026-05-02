@@ -16,6 +16,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [augments, setAugments] = useState([]);
   const [items, setItems] = useState([]);
+  const [updateStatus, setUpdateStatus] = useState("");
 
   useEffect(() => {
     const fetchChampions = async () => {
@@ -97,15 +98,41 @@ function App() {
   }, [champions]);
 
     // Load saved progress
-    useEffect(() => {
-      if (window.electronAPI) {
-        window.electronAPI.loadMissions().then(data => {
-          setCompleted(data);
-        });
-      } else {
-        console.error("window.electronAPI is undefined. Preload script not loaded?");
-      }
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.loadMissions().then(data => {
+        setCompleted(data);
+      });
+    } else {
+      console.error("window.electronAPI is undefined. Preload script not loaded?");
+    }
   }, []);
+
+  // Update status listener
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.onUpdateStatus((data) => {
+        setUpdateStatus(data.message);
+        if (data.status === 'available') {
+          setUpdateStatus('Update available! Restarting to download...');
+        }
+      });
+      
+      return () => {
+        window.electronAPI.removeUpdateListener();
+      };
+    }
+  }, []);
+
+  const checkForUpdates = async () => {
+    if (window.electronAPI) {
+      setUpdateStatus('Checking for updates...');
+      const result = await window.electronAPI.checkForUpdates();
+      if (!result.success) {
+        setUpdateStatus('Error checking for updates');
+      }
+    }
+  };
 
 const champByKey = useMemo(() => {
   const map = {};
@@ -131,6 +158,20 @@ const champByKey = useMemo(() => {
               <div className="[-webkit-app-region:no-drag]">
                 <ChampionSearch champions={champions} />
               </div>
+              
+              <button
+                onClick={checkForUpdates}
+                className="[-webkit-app-region:no-drag] px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
+                title="Check for updates"
+              >
+                ↻
+              </button>
+              
+              {updateStatus && (
+                <span className="[-webkit-app-region:no-drag] text-xs text-green-400">
+                  {updateStatus}
+                </span>
+              )}
             </div>
 
             <div>

@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getCurrentSummoner: () => ipcRenderer.invoke("get-current-summoner"),
   getGameEvents: () => ipcRenderer.invoke("get-game-events"),
   getName: (puuid) => ipcRenderer.invoke("get-name", puuid),
-  getPlayerList: () => ipcRenderer.invoke("get-player-list")
+  getPlayerList: () => ipcRenderer.invoke("get-player-list"),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, data) => callback(data)),
+  removeUpdateListener: () => ipcRenderer.removeAllListeners('update-status')
 });
 
