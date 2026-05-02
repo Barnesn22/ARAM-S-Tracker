@@ -129,8 +129,12 @@ ipcMain.handle("get-name", async (event, puuid) => {
   return await lcuService.getName(puuid);
 });
 
-// Manual Update Handlers
+// Auto Update on startup
+app.whenReady().then(() => {
+  autoUpdater.checkForUpdatesAndNotify();
+});
 
+// Manual Update Handlers
 ipcMain.handle("check-for-updates", async () => {
   try {
     autoUpdater.checkForUpdatesAndNotify();

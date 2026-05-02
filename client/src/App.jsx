@@ -16,7 +16,7 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [augments, setAugments] = useState([]);
   const [items, setItems] = useState([]);
-  const [updateStatus, setUpdateStatus] = useState("");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
     const fetchChampions = async () => {
@@ -112,9 +112,10 @@ function App() {
   useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.onUpdateStatus((data) => {
-        setUpdateStatus(data.message);
         if (data.status === 'available') {
-          setUpdateStatus('Update available! Restarting to download...');
+          setUpdateAvailable(true);
+        } else if (data.status === 'not-available') {
+          setUpdateAvailable(false);
         }
       });
       
@@ -126,10 +127,9 @@ function App() {
 
   const checkForUpdates = async () => {
     if (window.electronAPI) {
-      setUpdateStatus('Checking for updates...');
       const result = await window.electronAPI.checkForUpdates();
       if (!result.success) {
-        setUpdateStatus('Error checking for updates');
+        setUpdateAvailable(false);
       }
     }
   };
@@ -159,18 +159,14 @@ const champByKey = useMemo(() => {
                 <ChampionSearch champions={champions} />
               </div>
               
-              <button
-                onClick={checkForUpdates}
-                className="[-webkit-app-region:no-drag] px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
-                title="Check for updates"
-              >
-                ↻
-              </button>
-              
-              {updateStatus && (
-                <span className="[-webkit-app-region:no-drag] text-xs text-green-400">
-                  {updateStatus}
-                </span>
+              {updateAvailable && (
+                <button
+                  onClick={checkForUpdates}
+                  className="[-webkit-app-region:no-drag] px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm font-semibold animate-pulse"
+                  title="Update available! Click to download"
+                >
+                  Update
+                </button>
               )}
             </div>
 
