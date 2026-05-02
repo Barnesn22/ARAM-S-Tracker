@@ -1,7 +1,7 @@
 {
   "name": "bridge-buddy",
   "private": true,
-  "version": "0.1.7",
+  "version": "0.1.8",
   "type": "module",
   "main": "electron/main.js",
   "description": "League of Legends ARAM stats tracker app",
