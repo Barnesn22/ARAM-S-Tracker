@@ -78,7 +78,7 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
   return (
     <div className="flex p-5 h-full gap-4 items-start">
       <div className="w-1/5 flex flex-col bg-secondary border border-accent rounded-lg p-4">
-        <h2 className="text-xl font-bold mb-4">Progress Yay Update 2</h2>
+        <h2 className="text-xl font-bold mb-4">Progress</h2>
 
           {/* Overall */}
           <div className="mb-4">
