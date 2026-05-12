@@ -24,6 +24,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   removeUpdateListener: () => ipcRenderer.removeAllListeners('update-status'),
   fetchSummonerInfo: (gameName, tagLine) => ipcRenderer.invoke("fetch-summoner-info", gameName, tagLine),
   fetchMatchHistory: (puuid, numMatches) => ipcRenderer.invoke("fetch-match-history", puuid, numMatches),
+  // Environment variables
+  getEnvVar: (key) => process.env[key] || null,
   // Zoom controls
   zoomIn: () => ipcRenderer.send("zoom-in"),
   zoomOut: () => ipcRenderer.send("zoom-out"),

@@ -1,7 +1,10 @@
 // API Client for ARAM Tracker Backend
 class ApiClient {
-  constructor(baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3001') {
-    this.baseURL = baseURL;
+  constructor(baseURL = null) {
+    // Try to get environment variable from Electron, fallback to localhost for development
+    const envURL = window.electronAPI?.getEnvVar?.('REACT_APP_API_URL');
+    this.baseURL = baseURL || envURL || 'http://localhost:3001';
+    console.log(envURL)
   }
 
   async request(endpoint, options = {}) {

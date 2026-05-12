@@ -288,7 +288,11 @@ const db = mysql.createConnection({
   port: process.env.MYSQL_PORT || 3306,
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE || 'bridge_buddy'
+  database: process.env.MYSQL_DATABASE || 'bridge_buddy',
+  acquireTimeout: 60000,
+  timeout: 60000,
+  reconnect: true,
+  multipleStatements: false
 });
 
 // Add error handling for database connection
@@ -305,6 +309,36 @@ db.connect((err) => {
     console.log('Database connected successfully');
   }
 });
+
+// Handle connection errors and reconnection
+db.on('error', (err) => {
+  console.error('Database error:', err);
+  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+    console.log('Attempting to reconnect to database...');
+    db.connect();
+  }
+});
+
+db.on('close', () => {
+  console.log('Database connection closed');
+});
+
+// Helper function to ensure connection is alive
+function ensureConnection(callback) {
+  if (db.state === 'disconnected') {
+    db.connect((err) => {
+      if (err) {
+        console.error('Reconnection failed:', err);
+        callback(err);
+      } else {
+        console.log('Database reconnected successfully');
+        callback(null);
+      }
+    });
+  } else {
+    callback(null);
+  }
+}
 
 // API Routes
 app.get('/api/matches', (req, res) => {

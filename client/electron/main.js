@@ -5,7 +5,15 @@ import { fileURLToPath } from "url";
 import * as lcuService from "./lcuService.js";
 import pkg from 'electron-updater'
 import log from 'electron-log'
+import dotenv from 'dotenv'
 const { autoUpdater } = pkg;
+
+// Compute __dirname manually
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
@@ -13,10 +21,6 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = false;
 
 let win;
-
-// Compute __dirname manually
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Where the JSON file will live
 const dataPath = path.join(app.getPath("userData"), "missions.json");
