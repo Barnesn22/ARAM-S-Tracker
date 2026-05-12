@@ -342,6 +342,8 @@ function ensureConnection(callback) {
 
 // API Routes
 app.get('/api/matches', (req, res) => {
+  console.log('GET /api/matches - Request received');
+  
   const query = `
     SELECT g.*, COUNT(p.id) as participant_count
     FROM games g
@@ -351,11 +353,16 @@ app.get('/api/matches', (req, res) => {
     LIMIT 50
   `;
   
+  console.log('Database connection state:', db.state);
+  
   db.query(query, (err, results) => {
     if (err) {
-      res.status(500).json({ error: err });
+      console.error('Database query error:', err);
+      console.error('Query that failed:', query);
+      res.status(500).json({ error: 'Database query failed', details: err.message });
       return;
     }
+    console.log('Query successful, returned', results.length, 'matches');
     res.json(results);
   });
 });
@@ -716,13 +723,20 @@ app.post('/api/summoners/ingest', async (req, res) => {
 });
 
 app.get('/api/stats/champions', (req, res) => {
+  console.log('GET /api/stats/champions - Request received');
+  console.log('Database connection state:', db.state);
+  
   const query = 'SELECT * FROM champ_stats ORDER BY games DESC';
+  console.log('Executing query:', query);
   
   db.query(query, (err, results) => {
     if (err) {
-      res.status(500).json({ error: err });
+      console.error('Champion stats query error:', err);
+      console.error('Query that failed:', query);
+      res.status(500).json({ error: 'Champion stats query failed', details: err.message });
       return;
     }
+    console.log('Champion stats query successful, returned', results.length, 'champions');
     res.json(results);
   });
 });
