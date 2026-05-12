@@ -283,22 +283,25 @@ app.use(cors());
 app.use(express.json());
 
 // ⚠️ use environment variables (important for Render)
-const db = mysql.createConnection({
+const pool = mysql.createPool({
   host: process.env.MYSQL_HOST || 'localhost',
   port: process.env.MYSQL_PORT || 3306,
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE || 'bridge_buddy',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
   acquireTimeout: 60000,
   timeout: 60000,
   reconnect: true,
   multipleStatements: false
 });
 
-// Add error handling for database connection
-db.connect((err) => {
+// Test pool connection
+pool.getConnection((err, connection) => {
   if (err) {
-    console.error('Database connection failed:', err);
+    console.error('Database pool connection failed:', err);
     console.error('Please check your environment variables:');
     console.error('- MYSQL_HOST:', process.env.MYSQL_HOST);
     console.error('- MYSQL_PORT:', process.env.MYSQL_PORT);
@@ -306,38 +309,44 @@ db.connect((err) => {
     console.error('- MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
     console.error('- MYSQL_PASSWORD:', process.env.MYSQL_PASSWORD ? '[SET]' : '[NOT SET]');
   } else {
-    console.log('Database connected successfully');
+    console.log('Database pool connected successfully');
+    connection.release();
   }
 });
 
-// Handle connection errors and reconnection
-db.on('error', (err) => {
-  console.error('Database error:', err);
+// Handle pool errors
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
   if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.log('Attempting to reconnect to database...');
-    db.connect();
+    console.log('Connection lost, pool will handle reconnection');
   }
 });
 
-db.on('close', () => {
-  console.log('Database connection closed');
-});
-
-// Helper function to ensure connection is alive
-function ensureConnection(callback) {
-  if (db.state === 'disconnected') {
-    db.connect((err) => {
+// Helper function to execute queries with retry logic
+function executeQuery(query, params = [], callback) {
+  const maxRetries = 3;
+  let retryCount = 0;
+  
+  function attemptQuery() {
+    pool.query(query, params, (err, results) => {
       if (err) {
-        console.error('Reconnection failed:', err);
-        callback(err);
+        console.error(`Query attempt ${retryCount + 1} failed:`, err);
+        
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying query (${retryCount}/${maxRetries})...`);
+          setTimeout(attemptQuery, 1000 * retryCount);
+        } else {
+          console.error('Max retries reached, query failed permanently');
+          callback(err);
+        }
       } else {
-        console.log('Database reconnected successfully');
-        callback(null);
+        callback(null, results);
       }
     });
-  } else {
-    callback(null);
   }
+  
+  attemptQuery();
 }
 
 // API Routes
@@ -353,9 +362,7 @@ app.get('/api/matches', (req, res) => {
     LIMIT 50
   `;
   
-  console.log('Database connection state:', db.state);
-  
-  db.query(query, (err, results) => {
+  executeQuery(query, [], (err, results) => {
     if (err) {
       console.error('Database query error:', err);
       console.error('Query that failed:', query);
@@ -724,12 +731,11 @@ app.post('/api/summoners/ingest', async (req, res) => {
 
 app.get('/api/stats/champions', (req, res) => {
   console.log('GET /api/stats/champions - Request received');
-  console.log('Database connection state:', db.state);
   
   const query = 'SELECT * FROM champ_stats ORDER BY games DESC';
   console.log('Executing query:', query);
   
-  db.query(query, (err, results) => {
+  executeQuery(query, [], (err, results) => {
     if (err) {
       console.error('Champion stats query error:', err);
       console.error('Query that failed:', query);
