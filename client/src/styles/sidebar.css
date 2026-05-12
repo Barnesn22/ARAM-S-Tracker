@@ -1,0 +1,13 @@
+:root {
+  --sidebar-icon-color: #565682;
+  --sidebar-icon-hover-color: #ffffff;
+}
+
+.sidebar-icon {
+  color: var(--sidebar-icon-color);
+  transition: color 0.2s ease;
+}
+
+.sidebar-link:hover .sidebar-icon {
+  color: var(--sidebar-icon-hover-color);
+}

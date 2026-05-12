@@ -10,7 +10,7 @@ const SmallParticipant = ({ participant, champByKey }) => {
         size={20}
       />
       <span className="text-white truncate">
-        {participant.summoners.summoner_name}
+        {participant.summoner_name}
       </span>
     </div>
   );

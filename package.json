@@ -10,10 +10,10 @@
     "dev": "cd client && npm run dev",
     "build": "cd client && npm run build",
     "start": "cd client && npm run electron",
+    "server": "cd server && node index.js",
     "install:all": "npm install && cd client && npm install",
     "clean": "cd client && npm run clean",
-    "data:init": "cd server && python initializeChampions.py && python initializeItems.py && python initializeAugments.py",
-    "data:ingest": "cd server && python injestion.py"
+    "data:ingest": "cd server && python mysql_injestion.py"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

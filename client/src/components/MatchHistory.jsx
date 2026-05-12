@@ -1,8 +1,7 @@
-import { useState } from "react";
+import React from "react";
 import MatchCard from "./MatchCard.jsx";
 
-const MatchHistory = ({ matches = [], champByKey }) => {
-  console.log(matches)
+const MatchHistory = React.memo(({ matches = [], champByKey }) => {
   return (
     <div>
       {matches.map(match => (
@@ -10,6 +9,6 @@ const MatchHistory = ({ matches = [], champByKey }) => {
       ))}
     </div>
   );
-};
+});
 
 export default MatchHistory;

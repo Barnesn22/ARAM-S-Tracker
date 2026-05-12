@@ -33,7 +33,7 @@ export default function ChampionSearch({ champions }) {
         onChange={(e) => setSearchTerm(e.target.value)}
         onFocus={() => setShowResults(true)}
         onBlur={() => setTimeout(() => setShowResults(false), 200)} // Delay to allow click
-        className="w-64 px-4 py-2 bg-[#2a2a3a] text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
+        className="w-full px-4 py-2 bg-[#2a2a3a] text-white rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none"
       />
       
       {searchTerm && (

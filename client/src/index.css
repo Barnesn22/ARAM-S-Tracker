@@ -1,8 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+
 @import "tailwindcss";
 @import "../tailwindcss/theme.css";
 
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-header: 'Poppins', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Monaco', monospace;
+  
+  font-family: var(--font-primary);
   line-height: 1.5;
   font-weight: 400;
 
@@ -21,7 +29,7 @@ body {
   padding: 0;
   height: 100%;
   color: #f0f0f0;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-primary);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -115,4 +123,17 @@ button:focus-visible {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+}
+
+/* Font utility classes */
+.font-primary {
+  font-family: var(--font-primary);
+}
+
+.font-header {
+  font-family: var(--font-header);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
 }

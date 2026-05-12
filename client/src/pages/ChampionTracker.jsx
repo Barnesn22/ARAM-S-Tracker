@@ -79,13 +79,13 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
     <div className="min-h-full bg-gradient-to-br from-[#0f0f23] to-[#1a1a2e] p-5">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-4">
-          <h1 className="text-3xl font-bold text-white">ARAM S Tracker</h1>
+          <h1 className="text-3xl font-bold text-white font-header">ARAM S Tracker</h1>
         </div>
 
         <div className="flex gap-6 h-full">
           <div className="w-80 flex-shrink-0">
             <div className="bg-[#1a1a2e]/50 backdrop-blur-sm rounded-xl shadow-2xl border border-[#2a2a3a] p-4">
-              <h2 className="text-lg font-bold text-white mb-4">Progress Overview</h2>
+              <h2 className="text-lg font-bold text-white mb-4 font-header">Progress Overview</h2>
 
           {/* Overall */}
           <div className="mb-4">
@@ -107,7 +107,7 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
 
           {/* Role Breakdown */}
           <div>
-            <h3 className="text-base font-semibold text-white mb-3">Filter by Role</h3>
+            <h3 className="text-base font-semibold text-white mb-3 font-header">Filter by Role</h3>
 
             <div className="flex flex-col gap-2">
               {Object.entries(roleStats).map(([role, stats]) => {
@@ -153,7 +153,7 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
           {/* Sync and Search Section */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <button 
-              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm" 
+              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-400 text-white font-semibold rounded-lg hover:from-orange-600 hover:to-orange-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl text-sm font-header" 
               onClick={syncFromLeague} 
               disabled={syncing}
             >
@@ -205,13 +205,10 @@ function ChampionTracker({completedChamps, setCompleted, champions, version, cha
                       )}
                       {!isCompleted && (
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                          <div className="bg-orange-400 text-white text-xs font-bold px-2 py-1 rounded">
-                            Mark
-                          </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs mt-2 text-white font-medium group-hover:text-orange-400 transition-colors duration-200">
+                    <p className="text-xs mt-2 text-white font-medium group-hover:text-orange-400 transition-colors duration-200 font-primary">
                       {champ.name}
                     </p>
                   </div>

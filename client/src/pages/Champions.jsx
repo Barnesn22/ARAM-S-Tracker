@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import { computeGapTiers, jenks } from "../utils/tierUtils";
+import apiClient from "../api/client";
 
 export default function ChampionsPage({ champions }) {
   const navigate = useNavigate();
@@ -17,63 +16,76 @@ export default function ChampionsPage({ champions }) {
   async function fetchStats() {
     setLoading(true);
 
-    const { data, error } = await supabase
-        .from('champion_stats')  // your materialized view
-        .select('*');
+    try {
+      const data = await apiClient.getChampionStats();
+      console.log(data);
+      
+      if (!data || data.length === 0) {
+        console.error('No champion stats data available');
+        setLoading(false);
+        return;
+      }
 
-    if (error) {
+      // Process the data and set state
+      const processedData = data.map(d => ({
+        ...d,
+        winrate: parseFloat(d.winrate),
+        playrate: parseFloat(d.playrate)
+      }));
+
+      // Now process the data for scoring and tiering
+      const minMax = (arr) => ({
+        min: Math.min(...arr),
+        max: Math.max(...arr),
+      });
+
+      const weightWR = 0.8;
+      const weightPR = 0.2;
+      const winrates = processedData.map(d => d.winrate);
+      const playrates = processedData.map(d => d.playrate);
+      const { min: minWR, max: maxWR } = minMax(winrates);
+      const { min: minPR, max: maxPR } = minMax(playrates);
+
+      const normalize = (v, min, max) =>
+        max === min ? 0 : (v - min) / (max - min);
+
+      const scores = processedData.map(d => {
+        const wr = normalize(d.winrate, minWR, maxWR);
+        const pr = normalize(d.playrate, minPR, maxPR);
+
+        return wr * weightWR + pr * weightPR;
+      });
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
+      const variance =
+        scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length;
+
+      const std = Math.sqrt(variance);
+
+      // attach champ metadata + compute tier
+      const enriched = processedData.map((row) => {
+        const champ = champions.find((c) => c.key == row.champ_id);
+        const normWR = (row.winrate - minWR) / (maxWR - minWR)
+        const normPR = (row.playrate - minPR) / (maxPR - minPR)
+        const score = normWR * weightWR + normPR * weightPR;
+        const tier = getTier(score, mean, std);
+
+        return {
+          ...row,
+          name: champ?.name || "Unknown",
+          image: champ?.image,
+          tier,
+          score,
+        };
+      });
+
+      setData(enriched);
+      setLoading(false);
+
+    } catch (error) {
       console.error(error);
       setLoading(false);
       return;
     }
-
-    const minMax = (arr) => ({
-      min: Math.min(...arr),
-      max: Math.max(...arr),
-    });
-
-    const weightWR = 0.8;
-    const weightPR = 0.2;
-    const winrates = data.map(d => d["winrate"]);
-    const playrates = data.map(d => d["playrate"]);
-    const { min: minWR, max: maxWR } = minMax(winrates);
-    const { min: minPR, max: maxPR } = minMax(playrates);
-
-    const normalize = (v, min, max) =>
-      max === min ? 0 : (v - min) / (max - min);
-
-    const scores = data.map(d => {
-      const wr = normalize(d["winrate"], minWR, maxWR);
-      const pr = normalize(d["playrate"], minPR, maxPR);
-
-      return wr * weightWR + pr * weightPR;
-    });
-    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const variance =
-      scores.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / scores.length;
-
-    const std = Math.sqrt(variance);
-
-    // attach champ metadata + compute tier
-    const enriched = data.map((row) => {
-      const champ = champions.find((c) => c.key == row.champ_id);
-      const normWR = (row.winrate - minWR) / (maxWR - minWR)
-      const normPR = (row.playrate - minPR) / (maxPR - minPR)
-      const score = normWR * weightWR + normPR * weightPR;
-      const tier = getTier(score, mean, std);
-
-      return {
-        ...row,
-        name: champ?.name || "Unknown",
-        image: champ?.image,
-        tier,
-        score,
-      };
-    });
-
-    
-    setData(enriched)
-    setLoading(false)
   }
 
   const sortedData = [...data].sort((a, b) => {
@@ -105,12 +117,9 @@ export default function ChampionsPage({ champions }) {
         setSortKey(key);
         setSortDirection("desc");
     }
-
-    console.log(sortedData)
     }
 
   function getTier(score, mean, std) {
-    console.log(score, mean, std)
     if (score > mean + std*1.5) return "S";
     if (score > mean + std*.25) return "A";
     if (score > mean - std*.25) return "B";
@@ -138,7 +147,7 @@ export default function ChampionsPage({ champions }) {
   };
 
   if (loading) {
-    return <div className="p-5">Loading...</div>;
+    return <div className="p-5 text-center">Loading...</div>;
   }
 
   return (

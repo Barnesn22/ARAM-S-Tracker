@@ -1,4 +1,15 @@
 function calculateMVPScores(events, playerlist) {
+  // Handle undefined or invalid inputs
+  if (!events || !Array.isArray(events)) {
+    console.warn('calculateMVPScores: events is not an array', events);
+    return {};
+  }
+  
+  if (!playerlist || !Array.isArray(playerlist)) {
+    console.warn('calculateMVPScores: playerlist is not an array', playerlist);
+    return {};
+  }
+  
   const FIGHT_WINDOW = 20; // seconds between kills to stay in same fight
   const scores = Object.fromEntries(
     playerlist.map(player => [

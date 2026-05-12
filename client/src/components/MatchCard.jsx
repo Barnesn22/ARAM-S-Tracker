@@ -1,8 +1,9 @@
 import { useState } from "react";
+import React from "react";
 import ChampionDisplay from "./ChampionDisplay.jsx";
 import SmallParticipant from "./SmallParticipant.jsx";
 
-const MatchCard = ({ match, champByKey }) => {
+const MatchCard = React.memo(({ match, champByKey }) => {
   const [expanded, setExpanded] = useState(false);
   const player = match.player;
 
@@ -82,6 +83,6 @@ const MatchCard = ({ match, champByKey }) => {
 
     </div>
   );
-};
+});
 
 export default MatchCard;

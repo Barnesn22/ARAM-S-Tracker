@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   downloadUpdate: () => ipcRenderer.invoke("download-update"),
   onUpdateStatus: (callback) => ipcRenderer.on('update-status', (event, data) => callback(data)),
-  removeUpdateListener: () => ipcRenderer.removeAllListeners('update-status')
+  removeUpdateListener: () => ipcRenderer.removeAllListeners('update-status'),
+  fetchSummonerInfo: (gameName, tagLine) => ipcRenderer.invoke("fetch-summoner-info", gameName, tagLine),
+  fetchMatchHistory: (puuid, numMatches) => ipcRenderer.invoke("fetch-match-history", puuid, numMatches),
+  // Zoom controls
+  zoomIn: () => ipcRenderer.send("zoom-in"),
+  zoomOut: () => ipcRenderer.send("zoom-out"),
+  zoomReset: () => ipcRenderer.send("zoom-reset")
 });
 

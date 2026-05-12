@@ -52,6 +52,9 @@ function createWindow() {
     },
   });
 
+  // Set initial zoom level to 1.0 (100%)
+  win.webContents.setZoomLevel(0);
+
   if (app.isPackaged) {
     const indexPath = path.join(app.getAppPath(), "dist-vite", "index.html");
     win.loadFile(indexPath);
@@ -60,7 +63,35 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  
+  // Add keyboard shortcuts for zoom
+  app.on('browser-window-focus', () => {
+    if (win) {
+      win.webContents.on('before-input-event', (event, input) => {
+        // Check for Ctrl+Plus or Ctrl+Minus for zoom
+        if (input.control || input.meta) {
+          if (input.key === '+' || input.key === '=') {
+            // Zoom in
+            const currentZoom = win.webContents.getZoomLevel();
+            win.webContents.setZoomLevel(currentZoom + 0.5);
+            event.preventDefault();
+          } else if (input.key === '-') {
+            // Zoom out
+            const currentZoom = win.webContents.getZoomLevel();
+            win.webContents.setZoomLevel(currentZoom - 0.5);
+            event.preventDefault();
+          } else if (input.key === '0') {
+            // Reset zoom to 100%
+            win.webContents.setZoomLevel(0);
+            event.preventDefault();
+          }
+        }
+      });
+    }
+  });
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
@@ -89,6 +120,27 @@ ipcMain.on("window-maximize", () => {
 
 ipcMain.on("window-close", () => {
   if (win) win.close();
+});
+
+// Zoom controls
+ipcMain.on("zoom-in", () => {
+  if (win) {
+    const currentZoom = win.webContents.getZoomLevel();
+    win.webContents.setZoomLevel(currentZoom + 0.5);
+  }
+});
+
+ipcMain.on("zoom-out", () => {
+  if (win) {
+    const currentZoom = win.webContents.getZoomLevel();
+    win.webContents.setZoomLevel(currentZoom - 0.5);
+  }
+});
+
+ipcMain.on("zoom-reset", () => {
+  if (win) {
+    win.webContents.setZoomLevel(0);
+  }
 });
 
 ipcMain.handle("get-champ-select", async () => {
@@ -129,6 +181,14 @@ ipcMain.handle("get-player-list", async () => {
 
 ipcMain.handle("get-name", async (event, puuid) => {
   return await lcuService.getName(puuid);
+});
+
+ipcMain.handle("fetch-summoner-info", async (event, gameName, tagLine) => {
+  return await lcuService.fetchSummonerInfo(gameName, tagLine);
+});
+
+ipcMain.handle("fetch-match-history", async (event, puuid, numMatches) => {
+  return await lcuService.fetchMatchHistory(puuid, numMatches);
 });
 
 // Auto Update on startup - check only, don't download

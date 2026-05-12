@@ -117,6 +117,15 @@ async function getName(puuid) {
   return res.gameName;
 }
 
+async function fetchSummonerInfo(gameName, tagLine) {  const res = await lcuRequest(`/lol-summoner/v1/alias/lookup?gameName=${encodeURIComponent(gameName)}&tagLine=${encodeURIComponent(tagLine)}`);
+  return res;
+}
+
+async function fetchMatchHistory(puuid, numMatches) {
+  const res = await lcuRequest(`/lol-match-history/v1/products/lol/${puuid}/matches?endIndex=${numMatches-1}`);
+  return res;
+}
+
 export  {
   getChampSelect,
   getGamePhase,
@@ -127,6 +136,8 @@ export  {
   getCurrentSummoner,
   getGameEvents,
   getName,
-  getPlayerList
+  getPlayerList,
+  fetchSummonerInfo,
+  fetchMatchHistory,
 };
 
