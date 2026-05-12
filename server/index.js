@@ -1,7 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
-const result = require('dotenv').config({ path: '../.env' });
+const result = require('dotenv').config();
 const { fetchSummonerInfo, fetchMatchHistory } = require('./lcuService');
 console.log('Dotenv result:', result.error ? result.error : 'Success');
 
@@ -289,6 +289,21 @@ const db = mysql.createConnection({
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_PASSWORD,
   database: process.env.MYSQL_DATABASE || 'bridge_buddy'
+});
+
+// Add error handling for database connection
+db.connect((err) => {
+  if (err) {
+    console.error('Database connection failed:', err);
+    console.error('Please check your environment variables:');
+    console.error('- MYSQL_HOST:', process.env.MYSQL_HOST);
+    console.error('- MYSQL_PORT:', process.env.MYSQL_PORT);
+    console.error('- MYSQL_USER:', process.env.MYSQL_USER);
+    console.error('- MYSQL_DATABASE:', process.env.MYSQL_DATABASE);
+    console.error('- MYSQL_PASSWORD:', process.env.MYSQL_PASSWORD ? '[SET]' : '[NOT SET]');
+  } else {
+    console.log('Database connected successfully');
+  }
 });
 
 // API Routes
