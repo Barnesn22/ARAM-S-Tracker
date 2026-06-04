@@ -109,7 +109,7 @@ function transformAndLoad(matchJson, callback) {
     VALUES (?, ?, ?, ?, ?)
   `;
   
-  db.query(insertGameQuery, [
+  pool.query(insertGameQuery, [
     gameId,
     gameCreation,
     matchJson.gameDuration,
@@ -134,7 +134,7 @@ function transformAndLoad(matchJson, callback) {
     let summonerErrors = 0;
     
     summonerRows.forEach((summonerData, index) => {
-      db.query(summonerQuery, summonerData, (err) => {
+      pool.query(summonerQuery, summonerData, (err) => {
         if (err) {
           console.error('Error upserting summoner:', err);
           summonerErrors++;
@@ -145,7 +145,7 @@ function transformAndLoad(matchJson, callback) {
         if (summonersProcessed === summonerRows.length) {
           if (summonerErrors > 0) {
             // Delete the game if summoners failed
-            db.query('DELETE FROM games WHERE match_id = ?', [gameId], (deleteErr) => {
+            pool.query('DELETE FROM games WHERE match_id = ?', [gameId], (deleteErr) => {
               if (deleteErr) {
                 console.error('Error cleaning up failed game:', deleteErr);
               }
@@ -167,13 +167,13 @@ function transformAndLoad(matchJson, callback) {
           let errorCount = 0;
           
           participantRows.forEach((participantData, index) => {
-            db.query(participantQuery, participantData, (err) => {
+            pool.query(participantQuery, participantData, (err) => {
               if (err) {
                 console.log(err);
                 errorCount++;
                 // If any participant fails, delete the game to maintain consistency
                 if (errorCount === 1) {
-                  db.query('DELETE FROM games WHERE match_id = ?', [gameId], (deleteErr) => {
+                  pool.query('DELETE FROM games WHERE match_id = ?', [gameId], (deleteErr) => {
                     if (deleteErr) {
                       console.error('Error cleaning up failed game:', deleteErr);
                     }
@@ -199,7 +199,7 @@ function transformAndLoad(matchJson, callback) {
                     ORDER BY id
                   `;
                   
-                  db.query(getParticipantIdsQuery, [gameId], (err, insertedParticipants) => {
+                  pool.query(getParticipantIdsQuery, [gameId], (err, insertedParticipants) => {
                     if (err) {
                       console.error('Error getting participant IDs:', err);
                       return callback(null, { insertedCount });
@@ -239,7 +239,7 @@ function transformAndLoad(matchJson, callback) {
                         VALUES ?
                       `;
                       
-                      db.query(itemInsertQuery, [updatedItemRows], (err) => {
+                      pool.query(itemInsertQuery, [updatedItemRows], (err) => {
                         if (err) {
                           console.error('Error inserting items:', err);
                         } else {
@@ -255,7 +255,7 @@ function transformAndLoad(matchJson, callback) {
                         VALUES ?
                       `;
                       
-                      db.query(augmentInsertQuery, [updatedAugmentRows], (err) => {
+                      pool.query(augmentInsertQuery, [updatedAugmentRows], (err) => {
                         if (err) {
                           console.error('Error inserting augments:', err);
                         } else {
@@ -384,7 +384,7 @@ app.get('/api/matches/:match_id/participants', (req, res) => {
     WHERE p.match_id = ?
   `;
   
-  db.query(query, [match_id], (err, results) => {
+  pool.query(query, [match_id], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -403,7 +403,7 @@ app.get('/api/matches/:match_id/participants/:participant_id/items', (req, res) 
     ORDER BY item_id
   `;
   
-  db.query(query, [participant_id], (err, results) => {
+  pool.query(query, [participant_id], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -422,7 +422,7 @@ app.get('/api/matches/:match_id/participants/:participant_id/augments', (req, re
     ORDER BY augment_id
   `;
   
-  db.query(query, [participant_id], (err, results) => {
+  pool.query(query, [participant_id], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -446,7 +446,7 @@ app.get('/api/matches/:match_id/participants-with-items', (req, res) => {
     ORDER BY p.team_id, p.id
   `;
   
-  db.query(participantsQuery, [match_id], (err, participants) => {
+  pool.query(participantsQuery, [match_id], (err, participants) => {
     if (err) {
       console.error('Error fetching participants:', err);
       res.status(500).json({ error: err.message });
@@ -472,7 +472,7 @@ app.get('/api/matches/:match_id/participants-with-items', (req, res) => {
     
     const participantIds = participants.map(p => p.id);
     console.log(participantIds)
-    db.query(itemsQuery, participantIds, (err, items) => {
+    pool.query(itemsQuery, participantIds, (err, items) => {
       if (err) {
         console.error('Error fetching items:', err);
         // Continue without items rather than failing completely
@@ -490,7 +490,7 @@ app.get('/api/matches/:match_id/participants-with-items', (req, res) => {
         ORDER BY participant_id, augment_id
       `;
       
-      db.query(augmentsQuery, participantIds, (err, augments) => {
+      pool.query(augmentsQuery, participantIds, (err, augments) => {
         if (err) {
           console.error('Error fetching augments:', err);
           // Continue without augments rather than failing completely
@@ -549,7 +549,7 @@ app.get('/api/summoners/:puuid', (req, res) => {
     GROUP BY s.puuid
   `;
   
-  db.query(query, [puuid], (err, results) => {
+  pool.query(query, [puuid], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -579,7 +579,7 @@ app.get('/api/summoners/:puuid/games', (req, res) => {
     ORDER BY g.game_creation DESC
   `;
   
-  db.query(query, [puuid], (err, results) => {
+  pool.query(query, [puuid], (err, results) => {
     if (err) {
       console.error('Error fetching summoner games:', err);
       res.status(500).json({ error: err.message });
@@ -603,7 +603,7 @@ app.get('/api/summoners/:puuid/games/:match_id/participants', (req, res) => {
     ORDER BY p.team_id, p.id
   `;
   
-  db.query(query, [match_id], (err, results) => {
+  pool.query(query, [match_id], (err, results) => {
     if (err) {
       console.error('Error fetching match participants:', err);
       res.status(500).json({ error: err.message });
@@ -627,7 +627,7 @@ app.post('/api/summoners/ingest', async (req, res) => {
     
     // Check if summoner exists in database, insert if not
     const checkSummonerQuery = 'SELECT * FROM summoners WHERE puuid = ?';
-    db.query(checkSummonerQuery, [puuid], async (err, summonerResults) => {
+    pool.query(checkSummonerQuery, [puuid], async (err, summonerResults) => {
       if (err) {
         console.error('Error checking summoner:', err);
         return res.status(500).json({ error: err.message });
@@ -638,7 +638,7 @@ app.post('/api/summoners/ingest', async (req, res) => {
           INSERT INTO summoners (puuid, summoner_name, region, tagline) 
           VALUES (?, ?, ?, ?)
         `;
-        db.query(insertSummonerQuery, [puuid, gameName, 'NA1', tagLine], (err) => {
+        pool.query(insertSummonerQuery, [puuid, gameName, 'NA1', tagLine], (err) => {
           if (err) {
             console.error('Error inserting summoner:', err);
           }
@@ -666,7 +666,7 @@ app.post('/api/summoners/ingest', async (req, res) => {
           // Check if game already exists
           const checkGameQuery = 'SELECT match_id FROM games WHERE match_id = ?';
           
-          db.query(checkGameQuery, [game.gameId], (err, gameResults) => {
+          pool.query(checkGameQuery, [game.gameId], (err, gameResults) => {
             
             if (err) {
               console.error('Error checking game:', err);
@@ -762,13 +762,13 @@ app.post('/api/stats/champions/refresh', (req, res) => {
     ORDER BY games DESC;
   `;
   
-  db.query(truncateQuery, (err) => {
+  pool.query(truncateQuery, (err) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
     }
     
-    db.query(insertQuery, (err) => {
+    pool.query(insertQuery, (err) => {
       if (err) {
         res.status(500).json({ error: err });
         return;
@@ -791,7 +791,7 @@ app.get('/api/stats/champions/:champ_id', (req, res) => {
     WHERE champ_id = ?
   `;
   
-  db.query(query, [champ_id], (err, results) => {
+  pool.query(query, [champ_id], (err, results) => {
     if (err) {
       console.error('Champion stats query error:', err);
       res.status(500).json({ error: err.message });
@@ -811,7 +811,7 @@ app.get('/api/stats/champions/:champ_id/items', (req, res) => {
     ORDER BY games_played DESC
   `;
   
-  db.query(query, [champ_id], (err, results) => {
+  pool.query(query, [champ_id], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -830,7 +830,7 @@ app.get('/api/stats/champions/:champ_id/augments', (req, res) => {
     ORDER BY games_played DESC
   `;
   
-  db.query(query, [champ_id], (err, results) => {
+  pool.query(query, [champ_id], (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -859,7 +859,7 @@ app.get('/api/stats/champions/:champ_id/counters', (req, res) => {
     LIMIT 20
   `;
   
-  db.query(query, [champ_id, champ_id], (err, results) => {
+  pool.query(query, [champ_id, champ_id], (err, results) => {
     if (err) {
       console.error('Counters query error:', err);
       res.status(500).json({ error: err.message });
@@ -890,7 +890,7 @@ app.get('/api/stats/champions/:champ_id/synergies', (req, res) => {
     LIMIT 20
   `;
   
-  db.query(query, [champ_id, champ_id], (err, results) => {
+  pool.query(query, [champ_id, champ_id], (err, results) => {
     if (err) {
       console.error('Synergies query error:', err);
       res.status(500).json({ error: err.message });
@@ -904,7 +904,7 @@ app.get('/api/stats/champions/:champ_id/synergies', (req, res) => {
 app.get('/api/champions', (req, res) => {
   const query = 'SELECT champ_id FROM champ_stats';
   
-  db.query(query, (err, results) => {
+  pool.query(query, (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -919,7 +919,7 @@ app.get('/api/champion-mapping', (req, res) => {
   // For now, we'll return the champ_stats data and handle name mapping on client side
   const query = 'SELECT champ_id FROM champ_stats ORDER BY champ_id';
   
-  db.query(query, (err, results) => {
+  pool.query(query, (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -932,7 +932,7 @@ app.get('/api/champion-mapping', (req, res) => {
 app.get('/api/items', (req, res) => {
   const query = 'SELECT DISTINCT item_id FROM participant_items WHERE item_id > 0 ORDER BY item_id';
   
-  db.query(query, (err, results) => {
+  pool.query(query, (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -945,7 +945,7 @@ app.get('/api/items', (req, res) => {
 app.get('/api/augments', (req, res) => {
   const query = 'SELECT DISTINCT augment_id FROM participant_augments WHERE augment_id > 0 ORDER BY augment_id';
   
-  db.query(query, (err, results) => {
+  pool.query(query, (err, results) => {
     if (err) {
       res.status(500).json({ error: err });
       return;
@@ -1045,7 +1045,7 @@ app.get('/api/explorer/items/:champId', (req, res) => {
   console.log(query);
   console.log(params);
 
-  db.query(query, params, (err, results) => {
+  pool.query(query, params, (err, results) => {
     if (err) {
       console.error('Explorer items query error:', err);
       return res.status(500).json({ error: err.message });
@@ -1099,7 +1099,7 @@ app.get('/api/explorer/games/count', (req, res) => {
     ${whereClause}
   `;
   
-  db.query(query, params, (err, results) => {
+  pool.query(query, params, (err, results) => {
     if (err) {
       console.error('Games count query error:', err);
       res.status(500).json({ error: err.message });
@@ -1178,7 +1178,7 @@ app.get('/api/explorer/augments/:champId', (req, res) => {
   console.log('Final augment query:', query);
   console.log('Final augment params:', params);
 
-  db.query(query, params, (err, results) => {
+  pool.query(query, params, (err, results) => {
     if (err) {
       console.error('Explorer augments query error:', err);
       return res.status(500).json({ error: err.message });
@@ -1255,7 +1255,7 @@ app.get('/api/explorer', (req, res) => {
   }
   params.push(minGames);
   
-  db.query(query, params, (err, results) => {
+  pool.query(query, params, (err, results) => {
     if (err) {
       console.error('Explorer query error:', err);
       res.status(500).json({ error: err.message });
@@ -1271,6 +1271,14 @@ app.get('/', (req, res) => {
 
 // Function to refresh champ_stats table
 function refreshChampStats() {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS champ_stats (
+      champ_id INT PRIMARY KEY,
+      games INT DEFAULT 0,
+      winrate DECIMAL(5, 4) DEFAULT 0,
+      playrate DECIMAL(5, 4) DEFAULT 0
+    )
+  `;
   const truncateQuery = 'TRUNCATE TABLE champ_stats';
   const insertQuery = `
     INSERT INTO champ_stats
@@ -1284,24 +1292,40 @@ function refreshChampStats() {
     ORDER BY games DESC
   `;
   
-  db.query(truncateQuery, (err) => {
+  pool.query(createTableQuery, (err) => {
     if (err) {
-      console.error('Error truncating champ_stats:', err);
+      console.error('Error creating champ_stats table:', err);
       return;
     }
     
-    db.query(insertQuery, (err) => {
+    pool.query(truncateQuery, (err) => {
       if (err) {
-        console.error('Error inserting champ_stats:', err);
+        console.error('Error truncating champ_stats:', err);
         return;
       }
-      console.log('Champion stats refreshed successfully');
+      
+      pool.query(insertQuery, (err) => {
+        if (err) {
+          console.error('Error inserting champ_stats:', err);
+          return;
+        }
+        console.log('Champion stats refreshed successfully');
+      });
     });
   });
 }
 
 // Function to refresh champ_item_stats table
 function refreshChampItemStats() {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS champ_item_stats (
+      champ_id INT,
+      item_id INT,
+      games_played INT DEFAULT 0,
+      winrate DECIMAL(5, 4) DEFAULT 0,
+      PRIMARY KEY (champ_id, item_id)
+    )
+  `;
   const dropTempQuery = 'DROP TABLE IF EXISTS champ_item_stats_temp';
   const createTempQuery = `
     CREATE TABLE champ_item_stats_temp AS
@@ -1320,30 +1344,37 @@ function refreshChampItemStats() {
   const dropQuery = 'DROP TABLE IF EXISTS champ_item_stats';
   const renameQuery = 'RENAME TABLE champ_item_stats_temp TO champ_item_stats';
   
-  db.query(dropTempQuery, (err) => {
+  pool.query(createTableQuery, (err) => {
     if (err) {
-      console.error('Error dropping champ_item_stats_temp:', err);
+      console.error('Error creating champ_item_stats table:', err);
       return;
     }
     
-    db.query({sql: createTempQuery, timeout: 60000}, (err) => {
+    pool.query(dropTempQuery, (err) => {
       if (err) {
-        console.error('Error creating champ_item_stats_temp:', err);
+        console.error('Error dropping champ_item_stats_temp:', err);
         return;
       }
       
-      db.query(dropQuery, (err) => {
+      pool.query({sql: createTempQuery, timeout: 60000}, (err) => {
         if (err) {
-          console.error('Error dropping champ_item_stats:', err);
+          console.error('Error creating champ_item_stats_temp:', err);
           return;
         }
         
-        db.query(renameQuery, (err) => {
+        pool.query(dropQuery, (err) => {
           if (err) {
-            console.error('Error renaming champ_item_stats:', err);
+            console.error('Error dropping champ_item_stats:', err);
             return;
           }
-          console.log('Champion item stats refreshed successfully');
+          
+          pool.query(renameQuery, (err) => {
+            if (err) {
+              console.error('Error renaming champ_item_stats:', err);
+              return;
+            }
+            console.log('Champion item stats refreshed successfully');
+          });
         });
       });
     });
@@ -1352,6 +1383,15 @@ function refreshChampItemStats() {
 
 // Function to refresh champ_augment_stats table
 function refreshChampAugmentStats() {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS champ_augment_stats (
+      champ_id INT,
+      augment_id INT,
+      games_played INT DEFAULT 0,
+      winrate DECIMAL(5, 4) DEFAULT 0,
+      PRIMARY KEY (champ_id, augment_id)
+    )
+  `;
   const dropTempQuery = 'DROP TABLE IF EXISTS champ_augment_stats_temp';
   const createTempQuery = `
     CREATE TABLE champ_augment_stats_temp AS
@@ -1370,30 +1410,37 @@ function refreshChampAugmentStats() {
   const dropQuery = 'DROP TABLE IF EXISTS champ_augment_stats';
   const renameQuery = 'RENAME TABLE champ_augment_stats_temp TO champ_augment_stats';
   
-  db.query(dropTempQuery, (err) => {
+  pool.query(createTableQuery, (err) => {
     if (err) {
-      console.error('Error dropping champ_augment_stats_temp:', err);
+      console.error('Error creating champ_augment_stats table:', err);
       return;
     }
     
-    db.query({sql: createTempQuery, timeout: 60000}, (err) => {
+    pool.query(dropTempQuery, (err) => {
       if (err) {
-        console.error('Error creating champ_augment_stats_temp:', err);
+        console.error('Error dropping champ_augment_stats_temp:', err);
         return;
       }
       
-      db.query(dropQuery, (err) => {
+      pool.query({sql: createTempQuery, timeout: 60000}, (err) => {
         if (err) {
-          console.error('Error dropping champ_augment_stats:', err);
+          console.error('Error creating champ_augment_stats_temp:', err);
           return;
         }
         
-        db.query(renameQuery, (err) => {
+        pool.query(dropQuery, (err) => {
           if (err) {
-            console.error('Error renaming champ_augment_stats:', err);
+            console.error('Error dropping champ_augment_stats:', err);
             return;
           }
-          console.log('Champion augment stats refreshed successfully');
+          
+          pool.query(renameQuery, (err) => {
+            if (err) {
+              console.error('Error renaming champ_augment_stats:', err);
+              return;
+            }
+            console.log('Champion augment stats refreshed successfully');
+          });
         });
       });
     });
@@ -1410,9 +1457,9 @@ setInterval(refreshChampItemStats, 1800000);
 setInterval(refreshChampAugmentStats, 1800000);
 
 // Initial refresh on server start
-//refreshChampStats();
-//refreshChampItemStats();
-//refreshChampAugmentStats();
+refreshChampStats();
+refreshChampItemStats();
+refreshChampAugmentStats();
 
 app.listen(process.env.PORT || 3001, () => {
   console.log('Server running on port ' + (process.env.PORT || 3001));

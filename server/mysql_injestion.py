@@ -2,8 +2,8 @@ import time
 import json
 import os
 from datetime import datetime
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+import pymysql.cursors
 import subprocess
 import platform
 import re
@@ -38,17 +38,19 @@ def get_db_connection():
     """Get or create database connection"""
     global db_connection
     try:
-        if db_connection is None or not db_connection.is_connected():
-            db_connection = mysql.connector.connect(
+        if db_connection is None or not db_connection.open:
+            db_connection = pymysql.connect(
                 host=MYSQL_HOST,
                 port=MYSQL_PORT,
                 database=MYSQL_DATABASE,
                 user=MYSQL_USER,
-                password=MYSQL_PASSWORD
+                password=MYSQL_PASSWORD,
+                connect_timeout=10,
+                ssl=None
             )
             print("Connected to database")
         return db_connection
-    except Error as e:
+    except Exception as e:
         print(f"Error connecting to MySQL: {e}")
         raise
 
@@ -99,12 +101,9 @@ def get_lcu_credentials():
 
     if system == "Windows":
         cmd = [
-            "wmic",
-            "PROCESS",
-            "WHERE",
-            "name='LeagueClientUx.exe'",
-            "GET",
-            "commandline"
+            "powershell",
+            "-Command",
+            "Get-CimInstance Win32_Process | Where-Object {$_.Name -eq 'LeagueClientUx.exe'} | Select-Object -ExpandProperty CommandLine"
         ]
         result = subprocess.run(cmd, capture_output=True, text=True)
         output = result.stdout
@@ -155,7 +154,7 @@ def lcu_request(port, auth_token, endpoint):
 def get_next_match_id():
     """Get next match_id from match_queue table"""
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     
     try:
         # Get next match from queue
@@ -236,9 +235,6 @@ def transform_and_load(match_json):
     
     # Filter for specific game version
     game_version = match_json.get("gameVersion", "")
-    if not game_version.startswith("16.9"):
-        print(f"Skipping match {game_id} - wrong version: {game_version}")
-        return
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -481,8 +477,6 @@ def main():
                     for m in history['games']['games']:
                         if str(m['gameId']) in existing_match_ids:
                             print("Seen game before")
-                        elif not m['gameVersion'].startswith("16.9"):
-                            print("Not version 16.9, skipping")
                         else:
                             new_match_ids.add(str(m['gameId']))
                             print("Found new game")
@@ -503,6 +497,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:
-        if db_connection and db_connection.is_connected():
+        if db_connection and db_connection.open:
             db_connection.close()
             print("Database connection closed")
