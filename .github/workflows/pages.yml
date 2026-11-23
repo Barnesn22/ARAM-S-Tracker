@@ -3,9 +3,6 @@ name: Deploy Static Front‑End to GitHub Pages
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'client/**'
-      - 'client/public/mock-lcu.json'
 
 jobs:
   pages:
