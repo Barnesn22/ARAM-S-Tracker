@@ -10,7 +10,7 @@
     "dev": "vite",
     "electron": "electron .",
     "build": "vite build",
-    "build:static": "STATIC=true npm run build",
+    "build:static": "cross-env STATIC=true npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder",
