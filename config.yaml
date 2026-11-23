@@ -1,0 +1,7 @@
+connection_string: "postgresql://user:password@localhost:5432/yourdb"
+
+tables:
+  - users
+  - matches
+  - teams
+  - champions
