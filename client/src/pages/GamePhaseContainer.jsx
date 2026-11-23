@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { isStatic } from '../utils/staticMode';
 import { supabase } from '../supabaseClient'
 import ChampionSelect from "../components/ChampionSelect";
 import InGame from "../components/InGame";
