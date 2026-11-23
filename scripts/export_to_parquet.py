@@ -1,4 +1,4 @@
-// export_to_parquet.py
+# export_to_parquet.py
 """Export relational DB tables to Parquet files.
 
 Requirements:
