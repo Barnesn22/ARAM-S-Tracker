@@ -24,10 +24,6 @@ function App() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
-    if (__STATIC__) {
-      console.log('[DEBUG] Static mode: skipping champion fetch');
-      return;
-    }
     const fetchChampions = async () => {
       try {
         const versionRes = await fetch("https://ddragon.leagueoflegends.com/api/versions.json");
