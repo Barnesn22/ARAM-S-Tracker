@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { isStatic } from '../utils/staticMode';
-import { supabase } from '../supabaseClient'
+import { fetchChampionStats } from '../parquetClient';
 import ChampionSelect from "../components/ChampionSelect";
 import InGame from "../components/InGame";
 import calculateMVPScores from "../utils/MVPScores";
@@ -23,20 +23,16 @@ export default function GamePhaseContainer({ completedChamps, champByKey, itemMa
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data, error } = await supabase
-        .from('champion_stats')
-        .select('*')
-        .order('winrate', { ascending: false });
-  
-      if (error) {
-        console.error('Error fetching champion stats:', error)
-      } else {
-        setWinrates(data)
+      try {
+        const data = await fetchChampionStats();
+        setWinrates(data);
+      } catch (error) {
+        console.error('Error fetching champion stats:', error);
       }
-    }
+    };
 
-    fetchStats()
-  }, [])
+    fetchStats();
+  }, []);
   
   const getChampSelect = async () => {
     if (testing) {

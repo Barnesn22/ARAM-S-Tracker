@@ -1,8 +1,12 @@
+# injestion.py – rewritten to use Parquet model instead of MySQL
+# This script handles LCU authentication, a local JSON queue of match IDs,
+# and writes match data to Parquet files via `injestion_to_parquet.py`.
+
 import time
 import json
 import os
 from datetime import datetime
-from supabase import create_client
+from pathlib import Path
 import subprocess
 import platform
 import re
@@ -11,336 +15,258 @@ import requests
 import urllib3
 import traceback
 import concurrent.futures
+import threading
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ---------------------------
 # CONFIG
 # ---------------------------
+REPO_ROOT = str(Path(__file__).resolve().parents[1])
+RAW_FOLDER = str(Path(REPO_ROOT) / "raw_matches")
+BATCH_SIZE = 10
 
-SUPABASE_URL = "https://swffwjjveghovalezabk.supabase.co"
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-RAW_FOLDER = "raw_matches"
+# Import the local queue helpers
+from match_queue import pop_next_match_id, add_match_ids, get_queue_length
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Import the Parquet writer wrapper
+from injestion_to_parquet import (
+    get_existing_match_ids as _parquet_existing_ids,
+    ingest_match as parquet_ingest_match,
+    ingest_matches,
+)
 
 # ---------------------------
-# LCU AUTH
+# RATE LIMITING (thread-safe)
 # ---------------------------
+class RateLimiter:
+    def __init__(self, max_requests_per_second=10):
+        self.max_requests_per_second = max_requests_per_second
+        self.requests = []
+        self.min_interval = 1.0 / max_requests_per_second
+        self._lock = threading.Lock()
 
+    def wait_if_needed(self):
+        with self._lock:
+            current_time = time.time()
+            # purge old entries
+            self.requests = [t for t in self.requests if current_time - t < 1.0]
+            # enforce max per second
+            if len(self.requests) >= self.max_requests_per_second:
+                oldest = min(self.requests)
+                sleep = 1.0 - (current_time - oldest)
+                if sleep > 0:
+                    time.sleep(sleep)
+                    current_time = time.time()
+            # enforce minimum interval between bursts
+            if self.requests:
+                since_last = current_time - self.requests[-1]
+                if since_last < self.min_interval:
+                    time.sleep(self.min_interval - since_last)
+                    current_time = time.time()
+            self.requests.append(current_time)
+
+rate_limiter = RateLimiter(10)
+
+# ---------------------------
+# LCU AUTH – direct PowerShell implementation (no fallback)
+# ---------------------------
 def get_lcu_credentials():
+    """Retrieve LCU port and auth token across Windows, macOS, and Linux."""
     system = platform.system()
-
     if system == "Windows":
-        cmd = [
-            "wmic",
-            "PROCESS",
-            "WHERE",
-            "name='LeagueClientUx.exe'",
-            "GET",
-            "commandline"
-        ]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        output = result.stdout
-
+        ps_cmd = (
+            "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'LeagueClientUx.exe' } "
+            "| Select-Object -ExpandProperty CommandLine"
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", ps_cmd],
+            capture_output=True,
+            text=True,
+        )
+        stdout = result.stdout.strip()
     elif system in ("Darwin", "Linux"):
-        cmd = "ps -A | grep LeagueClientUx"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        output = result.stdout
-
+        result = subprocess.run(
+            "ps -A | grep LeagueClientUx",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        stdout = result.stdout.strip()
     else:
         raise Exception(f"Unsupported OS: {system}")
 
-    if not output:
-        raise Exception("LeagueClientUx process not found. Is the client open?")
-
-    # Extract port
-    port_match = re.search(r"--app-port=([0-9]*)", output)
-    token_match = re.search(r"--remoting-auth-token=([\w-]*)", output)
-
+    if not stdout:
+        raise Exception("League client not running or process lookup produced no output.")
+    port_match = re.search(r"--app-port=(\d+)", stdout)
+    token_match = re.search(r"--remoting-auth-token=([\w-]+)", stdout)
     if not port_match or not token_match:
-        raise Exception("Could not extract LCU credentials.")
-
-    port = port_match.group(1)
-    auth_token = token_match.group(1)
-
+        raise Exception(f"Could not extract LCU credentials from output: {stdout!r}")
+    port, token = port_match.group(1), token_match.group(1)
     print(f"Found LCU port={port}")
+    return port, token
 
-    return port, auth_token
+_thread_local = threading.local()
+
+
+def _get_session():
+    if not hasattr(_thread_local, "session"):
+        s = requests.Session()
+        s.verify = False
+        _thread_local.session = s
+    return _thread_local.session
+
 
 def lcu_request(port, auth_token, endpoint):
+    rate_limiter.wait_if_needed()
     url = f"https://127.0.0.1:{port}{endpoint}"
-    response = requests.get(
-        url,
-        auth=("riot", auth_token),
-        verify=False
-    )
-
+    response = _get_session().get(url, auth=("riot", auth_token))
     response.raise_for_status()
     return response.json()
 
 # ---------------------------
-# DB HELPERS
+# QUEUE HELPERS – thin wrappers around match_queue module
 # ---------------------------
-
 def get_next_match_id():
-    result = supabase.table("match_queue") \
-        .select("*") \
-        .limit(1) \
-        .execute()
+    """Retrieve the next match ID from the local JSON queue."""
+    return pop_next_match_id()
 
-    if not result.data:
-        return None
-
-    match_id = result.data[0]["match_id"]
-
-    # delete it from queue
-    supabase.table("match_queue") \
-        .delete() \
-        .eq("match_id", match_id) \
-        .execute()
-
-    return match_id
 
 def insert_new_match_ids(match_ids):
-    rows = [{"match_id": m, "region": "AMERICAS"} for m in match_ids]
+    """Append new match IDs to the queue, avoiding duplicates."""
+    if match_ids:
+        add_match_ids(list(match_ids))
 
-    # use upsert to avoid duplicates
-    supabase.table("match_queue") \
-        .upsert(rows) \
-        .execute()
 
-    supabase.rpc("delete_processed_matches", {}).execute()
+def get_existing_match_ids():
+    """Get all existing match IDs from Parquet files."""
+    return _parquet_existing_ids(Path(REPO_ROOT))
+
+
+def get_games_count():
+    """Get count of games in match_queue."""
+    return get_queue_length()
 
 
 # ---------------------------
-# TRANSFORM + LOAD
+# TRANSFORM + LOAD – forwards to Parquet writer
 # ---------------------------
+def transform_and_load(match_jsons):
+    """Convert raw match JSON(s) into Parquet files via the writer module."""
+    if isinstance(match_jsons, dict):
+        return parquet_ingest_match(match_jsons, repo_root=REPO_ROOT)
+    return ingest_matches(match_jsons, repo_root=REPO_ROOT)
 
-def transform_and_load(match_json):
-    game_id = match_json["gameId"]
 
-    # -----------------------
-    # Insert game
-    # -----------------------
-    game_row = {
-        "match_id": game_id,
-        "game_creation": match_json["gameCreationDate"],
-        "game_duration": match_json["gameDuration"],
-        "game_mode": match_json["queueId"],
-        "patch": match_json["gameVersion"]
-    }
+# ---------------------------
+# MAIN LOOP – retains mysql_injestion.py logic using the Parquet pathway
+# ---------------------------
+def main():
+    os.makedirs(RAW_FOLDER, exist_ok=True)
+    print("Getting LCU credentials…")
+    port, auth_token = get_lcu_credentials()
+    print("Starting ingestion loop…")
+
+    pending_batch = []
+    known_match_ids = get_existing_match_ids()
+
+    def flush_batch():
+        if pending_batch:
+            t0 = time.perf_counter()
+            written = transform_and_load(pending_batch)
+            print(f"[TIMING] Flushed {written} new match(es) to Parquet in {time.perf_counter() - t0:.3f}s")
+            pending_batch.clear()
 
     try:
-        supabase.table("games").insert(game_row).execute()
-    except Exception as e:
-        print("ERROR inserting game:", e)
-        return
-
-    # -----------------------
-    # Build identity lookup (avoid nested loop)
-    # -----------------------
-    identity_map = {
-        p["participantId"]: p["player"]
-        for p in match_json["participantIdentities"]
-    }
-
-    participant_rows = []
-    summoner_rows = []
-
-    # -----------------------
-    # Build participant rows
-    # -----------------------
-    for p in match_json["participants"]:
-        player = identity_map[p["participantId"]]
-
-        puuid = player["puuid"]
-        stats = p["stats"]
-
-        participant_rows.append({
-            "match_id": game_id,
-            "puuid": puuid,
-            "champ_id": p["championId"],
-            "team_id": p["teamId"],
-            "win": stats["win"],
-            "kills": stats["kills"],
-            "deaths": stats["deaths"],
-            "assists": stats["assists"],
-            "total_damage_dealt": stats["totalDamageDealtToChampions"],
-            "gold_earned": stats["goldEarned"],
-            "damage_self_mitigated": stats["damageSelfMitigated"],
-            "damage_to_objectives": stats["damageDealtToObjectives"],
-            "pentakills": stats["pentaKills"],
-            "magic_damage": stats["magicDamageDealtToChampions"],
-            "physical_damage": stats["physicalDamageDealtToChampions"],
-            "time_CC_others": stats["timeCCingOthers"],
-            "total_damage_taken": stats["totalDamageTaken"],
-            "total_heal": stats["totalHeal"],
-            "true_damage_dealt": stats["trueDamageDealtToChampions"]
-        })
-
-        summoner_rows.append({
-            "puuid": puuid,
-            "summoner_name": player["gameName"],
-            "region": player["platformId"],
-            "tagline": player["tagLine"]
-        })
-
-    # -----------------------
-    # Upsert summoners
-    # -----------------------
-    supabase.table("summoners").upsert(summoner_rows).execute()
-
-    # -----------------------
-    # Insert participants + RETURN IDs
-    # -----------------------
-    res = supabase.table("participants") \
-        .insert(participant_rows, returning="representation") \
-        .execute()
-
-    inserted_participants = res.data
-
-    if not inserted_participants:
-        print("ERROR: No participant IDs returned")
-        return
-
-    # -----------------------
-    # Build lookup map
-    # -----------------------
-    participant_map = {
-        (p["match_id"], p["puuid"]): p["id"]
-        for p in inserted_participants
-    }
-
-    participant_item_rows = []
-    participant_augment_rows = []
-
-    # -----------------------
-    # Build child rows using participant_id
-    # -----------------------
-    for p in match_json["participants"]:
-        player = identity_map[p["participantId"]]
-        puuid = player["puuid"]
-        stats = p["stats"]
-
-        participant_id = participant_map[(game_id, puuid)]
-
-        # Items
-        for slot in range(7):
-            participant_item_rows.append({
-                "participant_id": participant_id,
-                "item_id": stats[f"item{slot}"],
-                "slot": slot
-            })
-
-        # Augments
-        for slot in range(1, 7):
-            augment_id = stats[f"playerAugment{slot}"]
-
-            if augment_id == 0:
-                continue  # skip empty augment slots
-
-            participant_augment_rows.append({
-                "participant_id": participant_id,
-                "augment_id": augment_id,
-                "slot": slot
-            })
-
-    # -----------------------
-    # Insert child tables
-    # -----------------------
-    supabase.table("participant_items").insert(participant_item_rows).execute()
-    supabase.table("participant_augments").insert(participant_augment_rows).execute()
-    
-port, auth_token = 0, 0
-
-# ---------------------------
-# MAIN LOOP
-# ---------------------------
-
-def main():
-    global port, auth_token
-    get_histories = True
-    os.makedirs(RAW_FOLDER, exist_ok=True)
-
-    print("Getting LCU credentials...")
-    port, auth_token = get_lcu_credentials()
-    
-
-    print("Starting ingestion loop...")
-
-    while True:
-        try:
-            match_id = get_next_match_id()
-
-            if not match_id:
-                print("Queue empty. Sleeping...")
-                time.sleep(1)
-                continue
-
-            print(f"Processing match {match_id}")
-
-            # Fetch match
-            match_json = lcu_request(
-                port,
-                auth_token,
-                f"/lol-match-history/v1/games/{match_id}"
-            )
-
-            if match_json["queueId"] != 2400:
-                print("Not Mayhem, skipping")
-                continue
-
-            response = supabase.table("match_queue").select("*", count="exact").execute()
-            get_histories = response.count < 1000
-
-            # Save raw JSON
-            filepath = os.path.join(
-                RAW_FOLDER,
-                f"{match_id}_{datetime.now().timestamp()}.json"
-            )
-
-            with open(filepath, "w") as f:
-                json.dump(match_json, f)
-
-            # Transform + load
-            transform_and_load(match_json)
-
-            if not get_histories:
-                continue
-            
-            response = supabase.table("games").select("match_id").execute()
-            match_ids = {str(row["match_id"]) for row in response.data}
-
-            # Get player match histories
-            new_match_ids = set()
-            for i, p in enumerate(match_json['participantIdentities']):
-                if i % 2 != 0:
+        while True:
+            try:
+                t_loop = time.perf_counter()
+                t0 = time.perf_counter()
+                match_id = get_next_match_id()
+                t_pop = time.perf_counter() - t0
+                if not match_id:
+                    flush_batch()
+                    print("Queue empty. Sleeping…")
+                    time.sleep(1)
                     continue
 
-                puuid = p['player']['puuid']
-                print(puuid)
+                if str(match_id) in known_match_ids:
+                    print(f"[SKIP] Match {match_id} already known (pop={t_pop:.3f}s)")
+                    continue
 
-                history= lcu_request(
-                    port,
-                    auth_token,
-                    f"/lol-match-history/v1/products/lol/{puuid}/matches"
+                print(f"Processing match {match_id} (pop={t_pop:.3f}s)")
+                t0 = time.perf_counter()
+                match_json = lcu_request(port, auth_token, f"/lol-match-history/v1/games/{match_id}")
+                t_match_req = time.perf_counter() - t0
+                print(f"[TIMING] Fetch match {match_id}: {t_match_req:.3f}s")
+
+                if match_json.get("queueId") != 2400:
+                    print("Not Mayhem, skipping")
+                    continue
+
+                t0 = time.perf_counter()
+                queue_count = get_games_count()
+                get_histories = queue_count < 1000
+                t_qcount = time.perf_counter() - t0
+
+                # Persist raw JSON for debugging / audit
+                t0 = time.perf_counter()
+                filepath = os.path.join(RAW_FOLDER, f"{match_id}_{datetime.now().timestamp()}.json")
+                with open(filepath, "w", encoding="utf-8") as f:
+                    json.dump(match_json, f)
+                t_raw = time.perf_counter() - t0
+                print(f"[TIMING] queue_count={queue_count} ({t_qcount:.3f}s), save_raw={t_raw:.3f}s")
+
+                # Queue into batch & flush periodically
+                known_match_ids.add(str(match_json["gameId"]))
+                pending_batch.append(match_json)
+                if len(pending_batch) >= BATCH_SIZE:
+                    flush_batch()
+
+                if not get_histories:
+                    print(f"[TIMING] Total match {match_id}: {time.perf_counter() - t_loop:.3f}s (histories skipped)")
+                    continue
+
+                # Pull histories for a subset of participants sequentially
+                t_hist_total = time.perf_counter()
+                new_match_ids = set()
+                for i, p in enumerate(match_json.get("participantIdentities", [])):
+                    if i % 2 != 0:
+                        continue
+                    puuid = p["player"]["puuid"]
+                    t0 = time.perf_counter()
+                    try:
+                        history = lcu_request(
+                            port, auth_token, f"/lol-match-history/v1/products/lol/{puuid}/matches"
+                        )
+                        added = 0
+                        for m in history.get("games", {}).get("games", []):
+                            mid = str(m.get("gameId"))
+                            if mid not in known_match_ids:
+                                new_match_ids.add(mid)
+                                added += 1
+                        print(f"[TIMING] History {puuid[:8]}…: {time.perf_counter() - t0:.3f}s (+{added} new)")
+                    except Exception as e:
+                        print(f"Error fetching history for {puuid} ({time.perf_counter() - t0:.3f}s): {e}")
+
+                t0 = time.perf_counter()
+                insert_new_match_ids(new_match_ids)
+                t_insert = time.perf_counter() - t0
+                print(
+                    f"[TIMING] Histories total={time.perf_counter() - t_hist_total:.3f}s, "
+                    f"queue_insert({len(new_match_ids)})={t_insert:.3f}s, "
+                    f"match_total={time.perf_counter() - t_loop:.3f}s"
                 )
-                for m in history['games']['games']:
-                    if str(m['gameId']) not in match_ids:
-                        new_match_ids.add(str(m['gameId']))
-                        print("found new game")
-                    else:
-                        print("seen game before")
 
-            insert_new_match_ids(new_match_ids)
-
-        
-
-        except Exception as e:
-            print("Error:", e)
-            traceback.print_exc()
-
-
+            except Exception as e:
+                print("Error in main loop:", e)
+                traceback.print_exc()
+                time.sleep(5)
+    finally:
+        flush_batch()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nShutting down…")
